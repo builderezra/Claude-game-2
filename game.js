@@ -9,9 +9,9 @@
 const BLOCK = 250;          // base block footprint (world units)
 const BLOCK_H = 62;         // block height (world units)
 const AMP = 330;            // oscillation amplitude
-const BASE_SPEED = 1.85;    // rad/s of oscillation
-const SPEED_RAMP = 0.024;   // per block
-const SPEED_CAP = 4.4;
+const BASE_SPEED = 1.15;    // phase units/s — linear ping-pong, fair & readable
+const SPEED_RAMP = 0.016;   // per block
+const SPEED_CAP = 2.6;
 const PERFECT_TOL = 16;     // world units counted as a perfect drop
 const EARLY_TOL = 26;       // extra forgiveness for the first few blocks
 const REGROW_COMBO = 3;     // combo needed before blocks regrow
@@ -217,6 +217,7 @@ const dom = {
   statsLine: $('stats-line'), themeToast: $('theme-toast'),
   gameover: $('gameover'), goScore: $('go-score'), goBest: $('go-best'),
   newBest: $('new-best'), unlockNote: $('unlock-note'), goHint: $('go-hint'),
+  goClose: $('go-close'),
   soundBtn: $('sound-btn'), shareBtn: $('share-btn'),
 };
 
@@ -240,6 +241,8 @@ let unlockedThisRun = null;
 let time = 0;
 let bgHeight = 0;             // smoothed tower height driving the sky hue
 let stars = [];
+const reducedMotion = window.matchMedia &&
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function theme() { return THEMES[themeIndex]; }
 
@@ -282,7 +285,7 @@ function spawnActive() {
     wx: top.wx, wz: top.wz,
     y: i * BLOCK_H,
     color: blockColor(i),
-    t: dir > 0 ? -Math.PI / 2 : Math.PI / 2,  // start at one extreme
+    t: dir > 0 ? 0 : 2,                       // start at one extreme of the triangle wave
     speed: Math.min(BASE_SPEED + i * SPEED_RAMP, SPEED_CAP),
     center: axis === 'x' ? top.x : top.z,
     squash: 0,
@@ -366,7 +369,8 @@ function spawnFloat(text, x, z, y, color) {
   floats.push({ text, x, z, y, life: 0, max: 0.9, color });
 }
 function spawnConfetti() {
-  for (let i = 0; i < 110; i++) {
+  const n = reducedMotion ? 30 : 110;
+  for (let i = 0; i < n; i++) {
     confetti.push({
       x: Math.random() * W,
       y: -20 - Math.random() * H * 0.4,
@@ -407,7 +411,8 @@ function dropBlock() {
   const size = ax === 'x' ? active.wx : active.wz;
   const delta = pos - prevPos;
   const overhang = Math.abs(delta);
-  const tol = PERFECT_TOL + (stack.length < 6 ? EARLY_TOL * (1 - stack.length / 6) : 0);
+  let tol = PERFECT_TOL + (stack.length < 6 ? EARLY_TOL * (1 - stack.length / 6) : 0);
+  tol = Math.min(tol, size * 0.45);   // thin towers don't get free perfects
 
   if (overhang >= size) {                     // complete miss → game over
     active.dead = true;
@@ -554,6 +559,14 @@ function showGameOver() {
   dom.goScore.textContent = score;
   dom.goBest.textContent = `Best · ${best}`;
   dom.newBest.classList.toggle('visible', newBestThisRun);
+  // near-miss callout — the strongest "one more try" trigger there is
+  const gap = best - score;
+  if (!newBestThisRun && gap > 0 && gap <= 5) {
+    dom.goClose.textContent = gap === 1 ? '1 away. One.' : `Only ${gap} from your best`;
+    dom.goClose.classList.add('visible');
+  } else {
+    dom.goClose.classList.remove('visible');
+  }
   if (unlockedThisRun !== null) {
     dom.unlockNote.textContent = `${THEMES[unlockedThisRun].name} theme unlocked`;
     dom.unlockNote.classList.add('visible');
@@ -696,20 +709,22 @@ function update(dt) {
   // camera easing
   cam.y += (cam.targetY - cam.y) * Math.min(1, dt * 5);
   cam.zoom += (cam.targetZoom - cam.zoom) * Math.min(1, dt * 3);
-  if (cam.shake > 0) {
+  if (cam.shake > 0 && !reducedMotion) {
     cam.shake = Math.max(0, cam.shake - dt * 26);
     cam.shakeX = (Math.random() - 0.5) * cam.shake * 2;
     cam.shakeY = (Math.random() - 0.5) * cam.shake * 2;
-  } else { cam.shakeX = 0; cam.shakeY = 0; }
+  } else { cam.shake = 0; cam.shakeX = 0; cam.shakeY = 0; }
 
   // sky hue follows tower height
   const targetBg = stack.length * BLOCK_H;
   bgHeight += (targetBg - bgHeight) * Math.min(1, dt * 1.5);
 
-  // active block oscillation
+  // active block: constant-velocity ping-pong (predictable, fair timing)
   if (state === 'playing' && active) {
     active.t += active.speed * dt;
-    const pos = active.center + Math.sin(active.t) * AMP;
+    const p = ((active.t % 4) + 4) % 4;                 // phase in [0,4)
+    const tri = p < 2 ? p - 1 : 3 - p;                  // triangle wave in [-1,1]
+    const pos = active.center + tri * AMP;
     if (active.axis === 'x') active.x = pos; else active.z = pos;
   }
 
@@ -766,6 +781,17 @@ function drawBackground() {
   g.addColorStop(1, `hsl(${(t.bg2[0] + shift * 0.6) % 360},${t.bg2[1]}%,${t.bg2[2]}%)`);
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
+
+  // distant sun/moon glow, drifting down slowly as you climb
+  const sunY = H * 0.16 + cam.y * U * 0.05;
+  const sunX = W * 0.72;
+  const sunR = Math.min(W, H) * 0.34;
+  const sun = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunR);
+  sun.addColorStop(0, `hsla(${(t.bg2[0] + shift) % 360}, 80%, 75%, 0.22)`);
+  sun.addColorStop(0.35, `hsla(${(t.bg2[0] + shift) % 360}, 80%, 70%, 0.08)`);
+  sun.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = sun;
+  ctx.fillRect(sunX - sunR, sunY - sunR, sunR * 2, sunR * 2);
 
   // parallax stars
   const drift = cam.y * U * 0.12;
@@ -952,6 +978,11 @@ function boot() {
   renderThemes();
   renderStats();
   updateSoundBtn();
+  // desktop gets accurate input hints
+  if (window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    document.getElementById('tap-hint').textContent = 'Click or press space';
+    dom.goHint.textContent = 'Click to play again';
+  }
   setScreen('title');
   requestAnimationFrame(loop);
 }

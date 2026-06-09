@@ -249,6 +249,17 @@
     text-transform: uppercase;
     color: rgba(255,255,255,.7);
   }
+  #go-close {
+    margin-top: 10px;
+    font-size: clamp(11px, 3.1vw, 14px);
+    font-weight: 700;
+    letter-spacing: .18em;
+    text-indent: .18em;
+    text-transform: uppercase;
+    color: #ffb8c8;
+    display: none;
+  }
+  #go-close.visible { display: block; }
   #new-best {
     margin-top: 18px;
     padding: 10px 26px;
@@ -363,6 +374,7 @@
       <div id="go-label">Score</div>
       <div id="go-score">0</div>
       <div id="go-best">Best · 0</div>
+      <div id="go-close"></div>
       <div id="new-best">New Best!</div>
       <div id="unlock-note"></div>
       <button id="share-btn">Share</button>
