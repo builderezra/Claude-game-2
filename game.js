@@ -10,12 +10,12 @@ const BLOCK = 250;          // base block footprint (world units)
 const BLOCK_H = 62;         // block height (world units)
 const AMP = 330;            // oscillation amplitude
 const BASE_SPEED = 1.15;    // phase units/s — linear ping-pong, fair & readable
-const SPEED_RAMP = 0.016;   // per block
-const SPEED_CAP = 2.6;
-const PERFECT_TOL = 16;     // world units counted as a perfect drop
+const SPEED_RAMP = 0.028;   // per block
+const SPEED_CAP = 3.1;
+const PERFECT_TOL = 15;     // world units counted as a perfect drop
 const EARLY_TOL = 26;       // extra forgiveness for the first few blocks
 const REGROW_COMBO = 3;     // combo needed before blocks regrow
-const REGROW_AMT = 16;
+const REGROW_AMT = 12;
 const ISO_X = 0.82;         // isometric projection factors
 const ISO_Y = 0.46;
 const UNLOCKS = [0, 15, 30, 50, 80, 120];
@@ -968,6 +968,22 @@ if (location.search.includes('debug')) {
       dropBlock();
       return true;
     },
+    // simulated player: taps near center with ±jitterMs timing error
+    autoplay: (jitterMs = 40) => new Promise(resolve => {
+      if (state === 'title' || state === 'gameover') { restartLock = 0; startGame(); }
+      const iv = setInterval(() => {
+        if (state === 'gameover') { clearInterval(iv); resolve(score); return; }
+        if (state !== 'playing' || !active) return;
+        const top = stack[stack.length - 1];
+        const off = active.axis === 'x' ? active.x - top.x : active.z - top.z;
+        if (Math.abs(off) < 18) {
+          const vel = AMP * active.speed;                     // units/s
+          const err = (Math.random() * 2 - 1) * (jitterMs / 1000) * vel;
+          if (active.axis === 'x') active.x = top.x + err; else active.z = top.z + err;
+          dropBlock();
+        }
+      }, 16);
+    }),
   };
 }
 

@@ -1,5 +1,6 @@
-/* ZENITH service worker — cache-first for full offline play */
-const CACHE = 'zenith-v1';
+/* ZENITH service worker — stale-while-revalidate: instant offline loads,
+   updates picked up in the background for the next launch */
+const CACHE = 'zenith-v2';
 const ASSETS = [
   '.',
   'index.html',
@@ -26,17 +27,17 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
+  if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
   e.respondWith(
-    caches.match(e.request, { ignoreSearch: true }).then(hit =>
-      hit ||
-      fetch(e.request).then(res => {
-        if (res.ok && new URL(e.request.url).origin === location.origin) {
-          const clone = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, clone));
-        }
-        return res;
-      })
-    )
+    caches.open(CACHE).then(async cache => {
+      const cached = await cache.match(e.request, { ignoreSearch: true });
+      const refresh = fetch(e.request)
+        .then(res => {
+          if (res.ok) cache.put(e.request, res.clone());
+          return res;
+        })
+        .catch(() => cached);
+      return cached || refresh;
+    })
   );
 });
