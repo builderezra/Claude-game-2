@@ -287,6 +287,8 @@ function spawnActive() {
     color: blockColor(i),
     t: dir > 0 ? 0 : 2,                       // start at one extreme of the triangle wave
     speed: Math.min(BASE_SPEED + i * SPEED_RAMP, SPEED_CAP),
+    // travel distance varies per block after the opening — no metronome rhythm
+    amp: i < 8 ? AMP : AMP * (0.85 + Math.random() * 0.3),
     center: axis === 'x' ? top.x : top.z,
     squash: 0,
   };
@@ -724,7 +726,7 @@ function update(dt) {
     active.t += active.speed * dt;
     const p = ((active.t % 4) + 4) % 4;                 // phase in [0,4)
     const tri = p < 2 ? p - 1 : 3 - p;                  // triangle wave in [-1,1]
-    const pos = active.center + tri * AMP;
+    const pos = active.center + tri * active.amp;
     if (active.axis === 'x') active.x = pos; else active.z = pos;
   }
 
@@ -977,7 +979,7 @@ if (location.search.includes('debug')) {
         const top = stack[stack.length - 1];
         const off = active.axis === 'x' ? active.x - top.x : active.z - top.z;
         if (Math.abs(off) < 18) {
-          const vel = AMP * active.speed;                     // units/s
+          const vel = active.amp * active.speed;              // units/s
           const err = (Math.random() * 2 - 1) * (jitterMs / 1000) * vel;
           if (active.axis === 'x') active.x = top.x + err; else active.z = top.z + err;
           dropBlock();

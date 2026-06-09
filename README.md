@@ -5,6 +5,10 @@ A one-touch precision tower game built for mobile. Tap to drop the sliding block
 **Zero dependencies. Zero assets to download. ~30 KB of hand-written HTML, CSS and JavaScript.** All sound is synthesized live with WebAudio; all graphics are drawn with Canvas 2D.
 
 <p align="center">
+  <img src="docs/demo.gif" width="220" alt="Gameplay demo">
+</p>
+
+<p align="center">
   <img src="docs/screenshots/title.png" width="180" alt="Title screen">
   <img src="docs/screenshots/gameplay.png" width="180" alt="A 26-perfect combo in the Neon theme">
   <img src="docs/screenshots/newbest.png" width="180" alt="New best celebration with confetti">
