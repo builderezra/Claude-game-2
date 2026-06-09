@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>SINGULARITY</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#070b18; touch-action:none;
+    font-family:'Avenir Next','Segoe UI',system-ui,sans-serif; color:#cdd6f4; user-select:none; -webkit-user-select:none; }
+  canvas { position:fixed; inset:0; display:block; }
+  #hud { position:fixed; inset:0; pointer-events:none; z-index:5; }
+  .chip { position:absolute; top:max(10px, env(safe-area-inset-top)); padding:7px 13px; border-radius:20px;
+    background:rgba(10,16,38,.62); backdrop-filter:blur(6px); border:1px solid rgba(140,160,255,.18);
+    font-size:14px; font-weight:600; letter-spacing:.04em; white-space:nowrap; }
+  #stardust { left:10px; color:#ffd98a; }
+  #best { right:10px; color:#9aa8d8; font-size:12px; }
+  #meterWrap { position:absolute; top:max(12px, env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
+    width:min(42vw,210px); text-align:center; }
+  #meterLabel { font-size:9px; letter-spacing:.22em; color:#8fa0d0; margin-bottom:4px; font-weight:700; }
+  #meterBar { height:7px; border-radius:4px; background:rgba(120,140,220,.16); overflow:hidden; border:1px solid rgba(140,160,255,.18); }
+  #meterFill { height:100%; width:0%; border-radius:4px; transition:width .45s cubic-bezier(.2,.8,.3,1);
+    background:linear-gradient(90deg,#5e7bff,#a06bff,#ffd98a); box-shadow:0 0 8px rgba(160,120,255,.7); }
+  #hint { position:absolute; bottom:max(14px, env(safe-area-inset-bottom)); width:100%; text-align:center;
+    font-size:11px; letter-spacing:.14em; color:rgba(150,165,215,.55); transition:opacity 1s; }
+  #banner { position:fixed; top:33%; width:100%; text-align:center; z-index:8; pointer-events:none;
+    opacity:0; transform:scale(.92); transition:opacity .5s, transform .6s cubic-bezier(.2,1.4,.3,1); }
+  #banner.show { opacity:1; transform:scale(1); }
+  #bannerTitle { font-size:clamp(22px,7vw,40px); font-weight:800; letter-spacing:.18em;
+    background:linear-gradient(90deg,#8ab0ff,#e3c3ff,#ffd98a); -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter:drop-shadow(0 0 18px rgba(150,140,255,.65)); }
+  #bannerSub { margin-top:8px; font-size:12px; letter-spacing:.3em; color:#9fb0e8; }
+  #flash { position:fixed; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:9; }
+  #tally { position:fixed; inset:0; z-index:10; display:none; align-items:center; justify-content:center;
+    background:radial-gradient(ellipse at center, rgba(20,14,40,.82), rgba(5,7,18,.96)); backdrop-filter:blur(4px); }
+  #tally.show { display:flex; }
+  #tallyCard { width:min(86vw,360px); max-height:84vh; overflow-y:auto; text-align:center; padding:26px 24px;
+    border-radius:22px; background:rgba(14,18,42,.88); border:1px solid rgba(160,150,255,.25);
+    box-shadow:0 0 60px rgba(120,90,255,.25); }
+  #tallyTitle { font-size:26px; font-weight:800; letter-spacing:.16em; color:#ffd98a;
+    text-shadow:0 0 24px rgba(255,200,110,.55); }
+  #tallySub { font-size:11px; letter-spacing:.26em; color:#92a2d6; margin:6px 0 16px; }
+  #tallyList { text-align:left; font-size:13px; line-height:1.85; margin:0 auto 14px; max-width:240px; color:#bcc9f2; }
+  #tallyList b { float:right; color:#e7ddff; }
+  #tallyDust { font-size:30px; font-weight:800; color:#ffd98a; margin:4px 0 2px; }
+  #tallyDust span { font-size:14px; color:#caa75e; }
+  #tallyMeta { font-size:11px; color:#8093c8; letter-spacing:.06em; margin-bottom:18px; }
+  #againBtn { pointer-events:auto; cursor:pointer; border:none; padding:13px 34px; border-radius:30px;
+    font-size:15px; font-weight:800; letter-spacing:.14em; color:#0b1030;
+    background:linear-gradient(90deg,#ffd98a,#ff9ec6,#b08aff); box-shadow:0 0 26px rgba(255,180,160,.45);
+    transition:transform .12s; font-family:inherit; }
+  #againBtn:active { transform:scale(.94); }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div class="chip" id="stardust">✦ 0</div>
+  <div id="meterWrap"><div id="meterLabel">NEXT SCALE</div><div id="meterBar"><div id="meterFill"></div></div></div>
+  <div class="chip" id="best">BEST ✦ 0</div>
+  <div id="hint">DRAG TO AIM · RELEASE TO DROP</div>
+</div>
+<div id="banner"><div id="bannerTitle"></div><div id="bannerSub"></div></div>
+<div id="flash"></div>
+<div id="tally"><div id="tallyCard">
+  <div id="tallyTitle">SUPERNOVA</div>
+  <div id="tallySub">YOUR UNIVERSE RETURNS TO DUST</div>
+  <div id="tallyList"></div>
+  <div id="tallyDust">✦ 0</div>
+  <div id="tallyMeta"></div>
+  <button id="againBtn">NEW UNIVERSE</button>
+</div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+<script>
+'use strict';
+const { Engine, Bodies, Body, Composite, Events } = Matter;
+
+/* ---------------- config ---------------- */
+const ARENA_R = 340;                 // play-area radius (world units)
+const HORIZON_R = ARENA_R - 16;      // event-horizon ring
+const LAUNCH_R = ARENA_R + 34;
+const DOOM_TIME = 1.5;               // seconds fully outside horizon -> supernova
+const CHAIN_WINDOW = 0.6;
+
+const SCALES = [
+  { banner:'STELLAR NURSERY', gravityMul:1.0, bg:['#0b1024','#060914'],
+    tiers:[
+      { name:'Dust Mote',    r:12, c:['#e8e8f2','#9b9bb0'], glow:'#cfcfe8' },
+      { name:'Pebble',       r:16, c:['#b9bcc6','#6e7280'], glow:'#aab0c4' },
+      { name:'Asteroid',     r:22, c:['#a89c8d','#5d544a'], glow:'#a09480', craggy:true },
+      { name:'Comet',        r:30, c:['#eaf6ff','#7ec3ee'], glow:'#9fdcff', trail:true },
+      { name:'Moon',         r:40, c:['#e6e9f2','#8e93a8'], glow:'#cfd6ee', craters:true },
+      { name:'Rocky Planet', r:54, c:['#7fd4a8','#2b6ea8'], glow:'#6fd0c0' },
+      { name:'Gas Giant',    r:72, c:['#ffd9a0','#c8702c'], glow:'#ffb368', bands:true },
+      { name:'Star',         r:95, c:['#fff7d6','#ffb521'], glow:'#ffd76a', bloom:true },
+    ]},
+  { banner:'GALACTIC FIELD', gravityMul:0.82, bg:['#0a0820','#04030e'],
+    tiers:[
+      { name:'Protostar',    r:12, c:['#ffe9c9','#e08840'], glow:'#ffc78a', bloom:true },
+      { name:'Solar System', r:16, c:['#fff3c4','#b88a2e'], glow:'#ffe69a', ringed:true },
+      { name:'Binary Stars', r:22, c:['#dfeaff','#7a9aff'], glow:'#a8c0ff', binary:true },
+      { name:'Star Cluster', r:30, c:['#eef3ff','#8aa0e8'], glow:'#bcd0ff', cluster:true },
+      { name:'Nebula',       r:40, c:['#ffb3e0','#7050d8'], glow:'#d49aff', wispy:true },
+      { name:'Dwarf Galaxy', r:54, c:['#cdb8ff','#5838a8'], glow:'#b193ff', cluster:true },
+      { name:'Spiral Galaxy',r:72, c:['#e8dcff','#6a4ad0'], glow:'#c0a4ff', spiral:true },
+      { name:'Quasar',       r:95, c:['#ffffff','#7e6bff'], glow:'#b9a6ff', bloom:true, beams:true },
+    ]},
+];
+const DROP_WEIGHTS = [30, 26, 20, 14, 10]; // tiers 1..5
+
+/* ---------------- storage ---------------- */
+const store = (() => {
+  let mem = {};
+  try { localStorage.setItem('__t','1'); localStorage.removeItem('__t');
+    return { get:k => localStorage.getItem(k), set:(k,v) => localStorage.setItem(k,v) };
+  } catch (e) { return { get:k => mem[k], set:(k,v) => { mem[k]=v; } }; }
+})();
+let best = +(store.get('singularity_best') || 0);
+let lifetimeDust = +(store.get('singularity_lifetime') || 0);
+
+/* ---------------- canvas / camera ---------------- */
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1, view = { x:0, y:0, s:1 };
+function resize() {
+  DPR = Math.min(devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight;
+  cv.width = W * DPR; cv.height = H * DPR;
+  cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  const fit = Math.min(W / (2 * (LAUNCH_R + 28)), H * 0.86 / (2 * (LAUNCH_R + 28)));
+  view = { x: W / 2, y: H * 0.545, s: fit };
+}
+addEventListener('resize', resize); resize();
+
+/* starfield (parallax layers) */
+const starLayers = [[], [], []];
+for (let l = 0; l < 3; l++)
+  for (let i = 0; i < 70; i++)
+    starLayers[l].push({ x: Math.random(), y: Math.random(), r: 0.5 + Math.random() * (l * 0.7 + 0.7), tw: Math.random() * 7 });
+
+/* ---------------- audio ---------------- */
+let AC = null, humGain = null;
+const PENTA = [261.63, 293.66, 329.63, 392.0, 440.0];
+function audioInit() {
+  if (AC) return;
+  try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+  // ambient hum
+  humGain = AC.createGain(); humGain.gain.value = 0; humGain.connect(AC.destination);
+  [55, 55.7, 110.3].forEach((f, i) => {
+    const o = AC.createOscillator(); o.type = 'sine'; o.frequency.value = f;
+    const g = AC.createGain(); g.gain.value = i === 2 ? 0.25 : 0.6;
+    o.connect(g); g.connect(humGain); o.start();
+  });
+  humGain.gain.linearRampToValueAtTime(0.022, AC.currentTime + 3);
+}
+function tone(freq, dur, type, vol, when = 0, slide = 0) {
+  if (!AC) return;
+  const t = AC.currentTime + when;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(20, freq + slide), t + dur);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(vol, t + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(AC.destination);
+  o.start(t); o.stop(t + dur + 0.05);
+}
+function noiseBurst(dur, vol, fStart, fEnd, when = 0) {
+  if (!AC) return;
+  const t = AC.currentTime + when, n = AC.sampleRate * dur;
+  const buf = AC.createBuffer(1, n, AC.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+  const src = AC.createBufferSource(); src.buffer = buf;
+  const f = AC.createBiquadFilter(); f.type = 'lowpass';
+  f.frequency.setValueAtTime(fStart, t); f.frequency.exponentialRampToValueAtTime(fEnd, t + dur);
+  const g = AC.createGain(); g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  src.connect(f); f.connect(g); g.connect(AC.destination); src.start(t);
+}
+function sfxMerge(tier, chain) {
+  const f = PENTA[(tier + chain) % PENTA.length] * Math.pow(2, Math.min(tier, 7) / 9 + (chain - 1) * 0.12);
+  tone(f, 0.34, 'sine', 0.16); tone(f * 2, 0.22, 'sine', 0.05);
+  if (tier >= 5) { tone(58, 0.55, 'sine', 0.22, 0, -22); noiseBurst(0.3, 0.06, 1200, 200); }
+}
+function sfxDrop() { tone(190, 0.1, 'triangle', 0.05, 0, 80); }
+function sfxCollapse() {
+  if (!AC) return;
+  [0, .14, .28, .42, .6].forEach((w, i) => tone(PENTA[i % 5] * Math.pow(2, i / 4), 0.8, 'sine', 0.12, w));
+  tone(40, 2.4, 'sine', 0.26, .5, -12); noiseBurst(2.2, 0.1, 3000, 80, .5);
+}
+function sfxSupernova() { tone(46, 1.6, 'sine', 0.3, 0, -20); noiseBurst(1.5, 0.22, 5000, 100); }
+
+/* ---------------- game state ---------------- */
+const engine = Engine.create();
+engine.gravity.x = 0; engine.gravity.y = 0;
+const world = engine.world;
+
+let state = 'play';                  // play | collapsing | supernova | tally | crunch
+let scaleIdx = 0;
+let stardust = 0, runDust = 0;
+let lastMergeAt = -10, chainMult = 0;
+let maxForged = 0;                   // highest tier forged this scale (1-based)
+let forged = {};                     // name -> count (whole run)
+let nowS = 0, timeScale = 1, shake = 0, pulse = 0, flashA = 0;
+let cine = null;                     // active cinematic
+const particles = [], popups = [];
+
+let launcher = { ang: -Math.PI / 2, holding: false };
+let queue = [rollDrop(), rollDrop()];
+let dropCooldown = 0;
+
+function rollDrop() {
+  const total = DROP_WEIGHTS.reduce((a, b) => a + b, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < DROP_WEIGHTS.length; i++) { r -= DROP_WEIGHTS[i]; if (r <= 0) return i; }
+  return 0;
+}
+
+function spawnBody(tierIdx, x, y, vx = 0, vy = 0) {
+  const t = SCALES[scaleIdx].tiers[tierIdx];
+  const b = Bodies.circle(x, y, t.r, {
+    restitution: 0.25, friction: 0.06, frictionAir: 0.016, frictionStatic: 0.4,
+    density: 0.0012, slop: 0.2,
+  });
+  b.tier = tierIdx; b.scaleIdx = scaleIdx; b.born = nowS;
+  b.outside = 0; b.squash = 0; b.armed = false; b.spin = (Math.random() - 0.5) * 0.04;
+  Body.setVelocity(b, { x: vx, y: vy });
+  Body.setAngularVelocity(b, b.spin);
+  Composite.add(world, b);
+  return b;
+}
+
+/* radial gravity: base + k × total board mass */
+Events.on(engine, 'beforeUpdate', () => {
+  const bodies = Composite.allBodies(world);
+  let totalMass = 0;
+  for (const b of bodies) totalMass += b.mass;
+  const g = (0.00085 + totalMass * 0.0000045) * SCALES[scaleIdx].gravityMul;
+  for (const b of bodies) {
+    const d = Math.hypot(b.position.x, b.position.y) || 1;
+    Body.applyForce(b, b.position, {
+      x: -b.position.x / d * g * b.mass,
+      y: -b.position.y / d * g * b.mass,
+    });
+  }
+});
+
+/* merge detection */
+let mergeOps = [];
+Events.on(engine, 'collisionStart', e => {
+  for (const p of e.pairs) {
+    const a = p.bodyA, b = p.bodyB;
+    // landing squash on any decent impact
+    const rel = Math.hypot(a.velocity.x - b.velocity.x, a.velocity.y - b.velocity.y);
+    if (rel > 2.5) { a.squash = Math.min(1, rel / 9); b.squash = Math.min(1, rel / 9); }
+    if (state !== 'play') continue;
+    if (a.tier !== undefined && a.tier === b.tier && a.scaleIdx === b.scaleIdx)
+      mergeOps.push([a, b]);
+  }
+});
+
+function processMerges() {
+  if (!mergeOps.length) return;
+  const used = new Set();
+  for (const [a, b] of mergeOps) {
+    if (used.has(a.id) || used.has(b.id)) continue;
+    if (!Composite.get(world, a.id, 'body') || !Composite.get(world, b.id, 'body')) continue;
+    used.add(a.id); used.add(b.id);
+    doMerge(a, b);
+    if (state !== 'play') break; // collapse / crunch triggered
+  }
+  mergeOps = [];
+}
+
+function doMerge(a, b) {
+  const tiers = SCALES[scaleIdx].tiers;
+  const mx = (a.position.x + b.position.x) / 2, my = (a.position.y + b.position.y) / 2;
+  const vx = (a.velocity.x + b.velocity.x) / 2, vy = (a.velocity.y + b.velocity.y) / 2;
+  const tier = a.tier;
+  Composite.remove(world, a); Composite.remove(world, b);
+
+  chainMult = (nowS - lastMergeAt <= CHAIN_WINDOW) ? chainMult + 1 : 1;
+  lastMergeAt = nowS;
+
+  if (tier === tiers.length - 1) {           // top tier merged!
+    if (scaleIdx === 0) startScaleCollapse(mx, my);
+    else startBigCrunch(mx, my);
+    return;
+  }
+
+  const nb = spawnBody(tier + 1, mx, my, vx, vy);
+  nb.squash = 0.8; nb.armed = a.armed || b.armed;
+  const nt = tiers[tier + 1];
+  forged[nt.name] = (forged[nt.name] || 0) + 1;
+  maxForged = Math.max(maxForged, tier + 2);
+
+  const gain = 10 * (tier + 2) * chainMult;
+  addDust(gain, mx, my);
+  if (chainMult > 1) popups.push({ x: mx, y: my - nt.r - 26, text: '×' + chainMult, life: 1, big: true, color: '#ff9ec6' });
+
+  burst(mx, my, nt.glow, Math.min(26, 6 + tier * 3), nt.r);
+  pulse = Math.min(1, 0.25 + tier * 0.1);
+  shake = Math.min(8, 1 + tier * 0.9);
+  sfxMerge(tier + 1, chainMult);
+  if (navigator.vibrate) navigator.vibrate(tier >= 5 ? 40 : 10);
+  updateMeter();
+}
+
+function addDust(n, x, y) {
+  stardust += n; runDust += n;
+  document.getElementById('stardust').textContent = '✦ ' + stardust.toLocaleString();
+  if (x !== undefined) popups.push({ x, y, text: '+' + n, life: 1, color: '#ffd98a' });
+}
+
+function updateMeter() {
+  const n = SCALES[scaleIdx].tiers.length;
+  const lbl = document.getElementById('meterLabel');
+  let pct;
+  if (maxForged >= n) { pct = 100; lbl.textContent = scaleIdx === 0 ? 'FORGE A 2ND STAR — COLLAPSE!' : 'FORGE A 2ND QUASAR — CRUNCH!'; }
+  else { pct = Math.round(maxForged / n * 100); lbl.textContent = scaleIdx === 0 ? 'NEXT SCALE' : 'THE BIG CRUNCH'; }
+  document.getElementById('meterFill').style.width = pct + '%';
+}
+
+/* ---------------- particles / popups ---------------- */
+function burst(x, y, color, n, spread) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, sp = 1.5 + Math.random() * 4.5;
+    particles.push({ x: x + Math.cos(a) * spread * 0.4, y: y + Math.sin(a) * spread * 0.4,
+      vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0.6 + Math.random() * 0.7,
+      max: 1.3, size: 1.5 + Math.random() * 3.5, color });
+  }
+}
+
+/* ---------------- input ---------------- */
+function pointerAngle(e) {
+  const px = (e.clientX - view.x) / view.s, py = (e.clientY - view.y) / view.s;
+  return Math.atan2(py, px);
+}
+cv.addEventListener('pointerdown', e => {
+  audioInit(); if (AC && AC.state === 'suspended') AC.resume();
+  if (state !== 'play') return;
+  launcher.holding = true; launcher.ang = pointerAngle(e);
+  document.getElementById('hint').style.opacity = 0;
+});
+cv.addEventListener('pointermove', e => {
+  if (launcher.holding && state === 'play') launcher.ang = pointerAngle(e);
+});
+addEventListener('pointerup', () => {
+  if (!launcher.holding) return;
+  launcher.holding = false;
+  if (state !== 'play' || dropCooldown > 0) return;
+  const t = queue.shift(); queue.push(rollDrop());
+  const x = Math.cos(launcher.ang) * LAUNCH_R, y = Math.sin(launcher.ang) * LAUNCH_R;
+  spawnBody(t, x, y, -Math.cos(launcher.ang) * 3.2, -Math.sin(launcher.ang) * 3.2);
+  dropCooldown = 0.42; sfxDrop();
+});
+
+/* ---------------- supernova ---------------- */
+function checkDoom(dt) {
+  if (state !== 'play') return;
+  for (const b of Composite.allBodies(world)) {
+    const d = Math.hypot(b.position.x, b.position.y);
+    if (!b.armed && (d + b.circleRadius < HORIZON_R || nowS - b.born > 3.5)) b.armed = true;
+    if (b.armed && d - b.circleRadius > HORIZON_R) {
+      b.outside += dt;
+      if (b.outside >= DOOM_TIME) { startSupernova(); return; }
+    } else b.outside = Math.max(0, b.outside - dt * 2);
+  }
+}
+
+function startSupernova() {
+  state = 'supernova';
+  sfxSupernova();
+  if (navigator.vibrate) navigator.vibrate([60, 40, 120]);
+  cine = { t: 0, kind: 'supernova' };
+}
+
+function finishSupernova() {
+  // convert the whole board to stardust — failure feeds progression
+  let bonus = 0;
+  for (const b of Composite.allBodies(world)) {
+    bonus += (b.tier + 1) * 5;
+    burst(b.position.x, b.position.y, SCALES[b.scaleIdx].tiers[b.tier].glow, 10, b.circleRadius);
+    Composite.remove(world, b);
+  }
+  addDust(bonus);
+  showTally('SUPERNOVA', 'YOUR UNIVERSE RETURNS TO DUST', bonus);
+}
+
+function showTally(title, sub, bonus) {
+  state = 'tally';
+  best = Math.max(best, runDust); lifetimeDust += runDust;
+  store.set('singularity_best', best); store.set('singularity_lifetime', lifetimeDust);
+  document.getElementById('best').textContent = 'BEST ✦ ' + best.toLocaleString();
+  document.getElementById('tallyTitle').textContent = title;
+  document.getElementById('tallySub').textContent = sub;
+  const names = Object.keys(forged);
+  document.getElementById('tallyList').innerHTML = names.length
+    ? names.map(n => `${n}<b>×${forged[n]}</b>`).join('<br>')
+    : '<i>Nothing forged… drop faster, dream bigger.</i>';
+  let shown = 0;
+  const el = document.getElementById('tallyDust');
+  const target = runDust;
+  const tick = () => { shown = Math.min(target, shown + Math.max(1, Math.ceil(target / 40)));
+    el.innerHTML = '✦ ' + shown.toLocaleString() + ' <span>stardust</span>';
+    if (shown < target) requestAnimationFrame(tick); };
+  tick();
+  document.getElementById('tallyMeta').textContent =
+    `supernova bonus +${bonus} · best run ✦ ${best.toLocaleString()} · lifetime ✦ ${lifetimeDust.toLocaleString()}`;
+  document.getElementById('tally').classList.add('show');
+}
+
+document.getElementById('againBtn').addEventListener('click', () => {
+  document.getElementById('tally').classList.remove('show');
+  for (const b of Composite.allBodies(world)) Composite.remove(world, b);
+  scaleIdx = 0; runDust = 0; forged = {}; maxForged = 0; chainMult = 0;
+  queue = [rollDrop(), rollDrop()];
+  state = 'play'; timeScale = 1; cine = null;
+  updateMeter();
+});
+
+/* ---------------- scale collapse ---------------- */
+function showBanner(title, sub, ms) {
+  const el = document.getElementById('banner');
+  document.getElementById('bannerTitle').textContent = title;
+  document.getElementById('bannerSub').textContent = sub;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), ms);
+}
+
+function startScaleCollapse(mx, my) {
+  state = 'collapsing';
+  sfxCollapse();
+  if (navigator.vibrate) navigator.vibrate([30, 30, 30, 30, 200]);
+  const snap = Composite.allBodies(world).map(b => ({
+    x: b.position.x, y: b.position.y, tier: b.tier, sIdx: b.scaleIdx,
+    a: Math.atan2(b.position.y, b.position.x), d: Math.hypot(b.position.x, b.position.y),
+  }));
+  for (const b of Composite.allBodies(world)) Composite.remove(world, b);
+  cine = { t: 0, kind: 'collapse', snap, k: 0, fx: mx, fy: my };
+  const bonus = 2500;
+  addDust(bonus, 0, -60);
+}
+
+function finishScaleCollapse() {
+  scaleIdx = 1; maxForged = 0; chainMult = 0;
+  queue = [rollDrop(), rollDrop()];
+  // the old board IS the new piece: one Solar System token (tier 2)
+  const b = spawnBody(1, 0, 0, 0, 0);
+  b.armed = true; b.squash = 1;
+  forged['Solar System'] = (forged['Solar System'] || 0) + 1;
+  updateMeter();
+  showBanner('GALACTIC SCALE', 'YOU ARE NOW PLAYING AT THE GALACTIC SCALE', 3400);
+  state = 'play'; timeScale = 1; cine = { t: 0, kind: 'zoomout', zoom: 8 };
+}
+
+function startBigCrunch(mx, my) {
+  state = 'crunch';
+  sfxCollapse(); sfxSupernova();
+  burst(mx, my, '#ffffff', 60, 120);
+  cine = { t: 0, kind: 'crunch' };
+  addDust(25000, 0, -60);
+}
+
+/* ---------------- cinematics ---------------- */
+function runCinematic(dt) {
+  if (!cine) return 1;
+  cine.t += dt;
+  const flash = document.getElementById('flash');
+  if (cine.kind === 'supernova') {
+    timeScale = 0.22;
+    flashA = Math.min(1, cine.t / 0.9);
+    flash.style.opacity = flashA * 0.9;
+    shake = 6;
+    if (cine.t > 1.0) {
+      flash.style.opacity = 0; flashA = 0; timeScale = 1; cine = null;
+      finishSupernova();
+    }
+    return;
+  }
+  if (cine.kind === 'collapse') {
+    // 0–1.6s: spiral inward (drawn from snapshot) · flash · then zoom-out into scale 2
+    timeScale = 0;
+    const k = Math.min(1, cine.t / 1.6);
+    cine.k = 1 - Math.pow(1 - k, 3);
+    if (cine.t > 1.25) flash.style.opacity = Math.min(1, (cine.t - 1.25) / 0.35);
+    if (cine.t >= 1.7) { flash.style.opacity = 0; cine = null; finishScaleCollapse(); }
+    return;
+  }
+  if (cine.kind === 'zoomout') {
+    // camera pulls back ~10× — render zoom eases 8 → 1
+    cine.zoom = 1 + 7 * Math.pow(1 - Math.min(1, cine.t / 2.2), 3);
+    if (cine.t >= 2.2) cine = null;
+    return;
+  }
+  if (cine.kind === 'crunch') {
+    timeScale = 0.15;
+    flash.style.opacity = Math.min(1, cine.t / 1.4);
+    if (cine.t > 1.6) {
+      flash.style.opacity = 0; timeScale = 1; cine = null;
+      for (const b of Composite.allBodies(world)) Composite.remove(world, b);
+      showTally('THE BIG CRUNCH', 'QUASAR + QUASAR · REALITY FOLDS · YOU WIN PHASE 0', 25000);
+    }
+  }
+}
+
+/* ---------------- drawing ---------------- */
+function drawTierShape(t, r, time, x, y) {
+  // base orb with gradient glow
+  const g = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.1, 0, 0, r);
+  g.addColorStop(0, t.c[0]); g.addColorStop(1, t.c[1]);
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill();
+
+  if (t.craggy) { ctx.fillStyle = 'rgba(0,0,0,.22)';
+    for (let i = 0; i < 4; i++) { const a = i * 1.7 + 0.6;
+      ctx.beginPath(); ctx.arc(Math.cos(a) * r * 0.45, Math.sin(a) * r * 0.45, r * 0.18, 0, 7); ctx.fill(); } }
+  if (t.craters) { ctx.fillStyle = 'rgba(70,76,100,.35)';
+    for (let i = 0; i < 5; i++) { const a = i * 2.4 + 1.2;
+      ctx.beginPath(); ctx.arc(Math.cos(a) * r * 0.5, Math.sin(a) * r * 0.5, r * (0.1 + (i % 3) * 0.05), 0, 7); ctx.fill(); } }
+  if (t.bands) { ctx.save(); ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.clip();
+    ctx.fillStyle = 'rgba(120,50,10,.30)';
+    for (let i = -2; i <= 2; i++) ctx.fillRect(-r, i * r * 0.34 - r * 0.07, 2 * r, r * 0.14);
+    ctx.restore(); }
+  if (t.ringed) { ctx.strokeStyle = 'rgba(255,235,170,.7)'; ctx.lineWidth = r * 0.13;
+    ctx.beginPath(); ctx.ellipse(0, 0, r * 1.7, r * 0.55, 0.5, 0, 7); ctx.stroke(); }
+  if (t.binary) { ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(-r * 0.4, 0, r * 0.34, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(r * 0.4, 0, r * 0.28, 0, 7); ctx.fill(); }
+  if (t.cluster) { ctx.fillStyle = 'rgba(255,255,255,.85)';
+    for (let i = 0; i < 7; i++) { const a = i * 0.9 + time * 0.2;
+      ctx.beginPath(); ctx.arc(Math.cos(a) * r * 0.55, Math.sin(a * 1.3) * r * 0.55, r * 0.09, 0, 7); ctx.fill(); } }
+  if (t.wispy) { ctx.strokeStyle = 'rgba(255,200,255,.4)'; ctx.lineWidth = r * 0.12;
+    for (let i = 0; i < 3; i++) { ctx.beginPath();
+      ctx.arc(0, 0, r * (0.4 + i * 0.22), i + time * 0.3, i + time * 0.3 + 2.6); ctx.stroke(); } }
+  if (t.spiral) { ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = r * 0.09;
+    for (let arm = 0; arm < 2; arm++) { ctx.beginPath();
+      for (let i = 0; i <= 20; i++) { const a = i / 20 * 3.6 + arm * Math.PI + time * 0.25, rr = r * 0.12 + i / 20 * r * 0.8;
+        const px = Math.cos(a) * rr, py = Math.sin(a) * rr;
+        i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+      ctx.stroke(); }
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, r * 0.2, 0, 7); ctx.fill(); }
+  if (t.beams) { ctx.strokeStyle = 'rgba(190,170,255,.8)'; ctx.lineWidth = r * 0.1;
+    ctx.beginPath(); ctx.moveTo(0, -r * 1.6); ctx.lineTo(0, r * 1.6); ctx.stroke(); }
+  if (t.bloom) { const bg = ctx.createRadialGradient(0, 0, r * 0.6, 0, 0, r * 1.9);
+    bg.addColorStop(0, t.glow + '55'); bg.addColorStop(1, t.glow + '00');
+    ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(0, 0, r * 1.9, 0, 7); ctx.fill(); }
+}
+
+function drawBody(b, time) {
+  const t = SCALES[b.scaleIdx].tiers[b.tier];
+  const sq = b.squash || 0;
+  ctx.save();
+  ctx.translate(b.position.x, b.position.y);
+  ctx.rotate(b.angle);
+  if (sq > 0.02) {
+    const v = Math.hypot(b.velocity.x, b.velocity.y);
+    const dir = Math.atan2(b.velocity.y, b.velocity.x) - b.angle;
+    ctx.rotate(dir); ctx.scale(1 - sq * 0.22, 1 + sq * 0.22); ctx.rotate(-dir);
+  }
+  // soft glow halo
+  const hg = ctx.createRadialGradient(0, 0, t.r * 0.8, 0, 0, t.r * 1.45);
+  hg.addColorStop(0, t.glow + '44'); hg.addColorStop(1, t.glow + '00');
+  ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(0, 0, t.r * 1.45, 0, 7); ctx.fill();
+  // comet trail
+  if (t.trail) { const v = Math.hypot(b.velocity.x, b.velocity.y);
+    if (v > 0.5) { ctx.save(); ctx.rotate(Math.atan2(b.velocity.y, b.velocity.x) - b.angle);
+      const tg = ctx.createLinearGradient(0, 0, -t.r * 4, 0);
+      tg.addColorStop(0, 'rgba(160,220,255,.5)'); tg.addColorStop(1, 'rgba(160,220,255,0)');
+      ctx.fillStyle = tg; ctx.beginPath();
+      ctx.moveTo(0, -t.r * 0.7); ctx.lineTo(-t.r * (2 + v * 0.4), 0); ctx.lineTo(0, t.r * 0.7);
+      ctx.closePath(); ctx.fill(); ctx.restore(); } }
+  drawTierShape(t, t.r, time, b.position.x, b.position.y);
+  // doom warning
+  if (b.outside > 0.15) {
+    ctx.strokeStyle = `rgba(255,80,80,${0.4 + 0.6 * Math.sin(time * 18)})`;
+    ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, t.r + 6, 0, 7); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function draw(time) {
+  const sc = SCALES[scaleIdx];
+  // background
+  const bg = ctx.createRadialGradient(W / 2 * DPR, H / 2 * DPR, 0, W / 2 * DPR, H / 2 * DPR, Math.max(W, H) * DPR * 0.75);
+  bg.addColorStop(0, sc.bg[0]); bg.addColorStop(1, sc.bg[1]);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, cv.width, cv.height);
+
+  // parallax starfield
+  const par = Math.cos(launcher.ang) * 6;
+  for (let l = 0; l < 3; l++) {
+    ctx.fillStyle = `rgba(190,205,255,${0.25 + l * 0.18})`;
+    for (const s of starLayers[l]) {
+      const tw = 0.55 + 0.45 * Math.sin(time * 1.4 + s.tw);
+      const x = ((s.x * W + par * (l + 1) + time * (l + 1) * 1.4) % (W + 20)) - 10;
+      const y = s.y * H;
+      ctx.globalAlpha = tw;
+      ctx.fillRect(x * DPR, y * DPR, s.r * DPR, s.r * DPR);
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  // world transform (+ shake, + cinematic zoom)
+  let zoom = 1;
+  if (cine && cine.kind === 'zoomout') zoom = cine.zoom;
+  if (cine && cine.kind === 'collapse') zoom = 1 + cine.k * 0.25;
+  const sx = (Math.random() - 0.5) * shake, sy = (Math.random() - 0.5) * shake;
+  const s = view.s * DPR * zoom;
+  ctx.setTransform(s, 0, 0, s, (view.x + sx) * DPR, (view.y + sy) * DPR);
+
+  // arena + event horizon
+  ctx.strokeStyle = 'rgba(110,130,210,.16)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(0, 0, ARENA_R, 0, 7); ctx.stroke();
+  const hp = 0.5 + 0.5 * Math.sin(time * 2);
+  ctx.strokeStyle = `rgba(150,120,255,${0.35 + hp * 0.25})`;
+  ctx.lineWidth = 3; ctx.shadowColor = '#9a7bff'; ctx.shadowBlur = 14 * (0.6 + hp * 0.6);
+  ctx.beginPath(); ctx.arc(0, 0, HORIZON_R, 0, 7); ctx.stroke();
+  ctx.shadowBlur = 0;
+  // center glow
+  const cg = ctx.createRadialGradient(0, 0, 0, 0, 0, 90);
+  cg.addColorStop(0, scaleIdx === 0 ? 'rgba(255,220,150,.12)' : 'rgba(190,150,255,.12)');
+  cg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(0, 0, 90, 0, 7); ctx.fill();
+
+  // collapse cinematic: spiral snapshot inward
+  if (cine && cine.kind === 'collapse') {
+    for (const sb of cine.snap) {
+      const k = cine.k;
+      const a = sb.a + k * 5.2, d = sb.d * (1 - k);
+      const t = SCALES[sb.sIdx].tiers[sb.tier];
+      ctx.save(); ctx.translate(Math.cos(a) * d, Math.sin(a) * d);
+      ctx.rotate(a); const sscale = 1 - k * 0.7; ctx.scale(sscale, sscale);
+      drawTierShape(t, t.r, time, 0, 0);
+      ctx.restore();
+    }
+  }
+
+  // bodies
+  for (const b of Composite.allBodies(world)) drawBody(b, time);
+
+  // launcher + aim + queued object
+  if (state === 'play') {
+    const lx = Math.cos(launcher.ang) * LAUNCH_R, ly = Math.sin(launcher.ang) * LAUNCH_R;
+    // dotted aim line toward center
+    ctx.setLineDash([5, 11]); ctx.lineDashOffset = -time * 30;
+    ctx.strokeStyle = 'rgba(200,210,255,.35)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx * 0.06, ly * 0.06); ctx.stroke();
+    ctx.setLineDash([]);
+    const qt = SCALES[scaleIdx].tiers[queue[0]];
+    ctx.save(); ctx.translate(lx, ly);
+    const bob = 1 + 0.05 * Math.sin(time * 4);
+    ctx.scale(bob, bob);
+    drawTierShape(qt, qt.r, time, lx, ly);
+    ctx.restore();
+    // "next up" preview
+    const nx = Math.cos(launcher.ang + 0.42) * (LAUNCH_R + 14), ny = Math.sin(launcher.ang + 0.42) * (LAUNCH_R + 14);
+    const nt = SCALES[scaleIdx].tiers[queue[1]];
+    ctx.save(); ctx.translate(nx, ny); ctx.globalAlpha = 0.5; ctx.scale(0.5, 0.5);
+    drawTierShape(nt, nt.r, time, nx, ny); ctx.restore();
+  }
+
+  // particles
+  for (const p of particles) {
+    ctx.globalAlpha = Math.max(0, p.life / p.max);
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, 7); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // popups
+  ctx.textAlign = 'center';
+  for (const p of popups) {
+    ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 1.6));
+    ctx.fillStyle = p.color;
+    ctx.font = `800 ${p.big ? 30 : 19}px 'Avenir Next','Segoe UI',sans-serif`;
+    ctx.fillText(p.text, p.x, p.y - (1 - p.life) * 46);
+  }
+  ctx.globalAlpha = 1;
+
+  // merge screen pulse (vignette flash)
+  if (pulse > 0.01) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const pg = ctx.createRadialGradient(cv.width / 2, cv.height / 2, cv.height * 0.2, cv.width / 2, cv.height / 2, cv.height * 0.75);
+    pg.addColorStop(0, 'rgba(255,255,255,0)');
+    pg.addColorStop(1, `rgba(180,190,255,${pulse * 0.16})`);
+    ctx.fillStyle = pg; ctx.fillRect(0, 0, cv.width, cv.height);
+  }
+}
+
+/* ---------------- main loop ---------------- */
+let lastT = performance.now();
+function frame(t) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.033, (t - lastT) / 1000); lastT = t;
+  nowS += dt * timeScale;
+
+  runCinematic(dt);
+
+  if (timeScale > 0 && state !== 'tally') {
+    Engine.update(engine, Math.min(dt, 0.022) * 1000 * timeScale);
+    processMerges();
+    checkDoom(dt * timeScale);
+  }
+
+  dropCooldown = Math.max(0, dropCooldown - dt);
+  shake *= Math.pow(0.0008, dt); if (shake < 0.05) shake = 0;
+  pulse *= Math.pow(0.004, dt);
+  for (const b of Composite.allBodies(world)) if (b.squash) b.squash *= Math.pow(0.002, dt);
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx * dt * 60 * 0.6; p.y += p.vy * dt * 60 * 0.6;
+    p.vx *= 0.97; p.vy *= 0.97; p.life -= dt;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+  for (let i = popups.length - 1; i >= 0; i--) {
+    popups[i].life -= dt * 0.85;
+    if (popups[i].life <= 0) popups.splice(i, 1);
+  }
+
+  draw(t / 1000);
+}
+
+document.getElementById('best').textContent = 'BEST ✦ ' + best.toLocaleString();
+updateMeter();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
