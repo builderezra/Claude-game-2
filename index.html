@@ -8,6 +8,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#11102b">
 <meta name="description" content="ZENITH — stack to the sky. A one-touch precision tower game.">
+<meta property="og:title" content="ZENITH — Stack to the Sky">
+<meta property="og:description" content="A one-touch precision tower game. Tap to drop, stack to the sky.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="docs/screenshots/gameplay.png">
 <title>ZENITH</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -276,6 +280,24 @@
     display: none;
   }
   #unlock-note.visible { display: block; }
+  #share-btn {
+    margin-top: 18px;
+    padding: 9px 26px;
+    border: 1px solid rgba(255,255,255,.3);
+    border-radius: 999px;
+    background: rgba(255,255,255,.08);
+    color: rgba(255,255,255,.9);
+    font-family: inherit;
+    font-size: clamp(11px, 3vw, 13px);
+    font-weight: 700;
+    letter-spacing: .22em;
+    text-indent: .22em;
+    text-transform: uppercase;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: background .2s, transform .15s;
+  }
+  #share-btn:active { transform: scale(.94); background: rgba(255,255,255,.18); }
   #go-hint {
     position: absolute;
     bottom: calc(var(--safe-bottom) + 9vh);
@@ -343,6 +365,7 @@
       <div id="go-best">Best · 0</div>
       <div id="new-best">New Best!</div>
       <div id="unlock-note"></div>
+      <button id="share-btn">Share</button>
     </div>
     <div id="go-hint">Tap to play again</div>
   </div>

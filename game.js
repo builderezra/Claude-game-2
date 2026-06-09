@@ -81,6 +81,33 @@ const AudioSys = {
   },
   resume() {
     if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+    this.startAmbience();
+  },
+  // barely-there pad: two soft detuned tones through a slow-breathing lowpass
+  startAmbience() {
+    if (!this.ctx || this.amb) return;
+    const t0 = this.ctx.currentTime;
+    this.amb = this.ctx.createGain();
+    this.amb.gain.setValueAtTime(0.0001, t0);
+    this.amb.gain.exponentialRampToValueAtTime(0.045, t0 + 4);
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 500;
+    const lfo = this.ctx.createOscillator();
+    lfo.frequency.value = 0.06;
+    const lfoGain = this.ctx.createGain();
+    lfoGain.gain.value = 220;
+    lfo.connect(lfoGain).connect(filter.frequency);
+    lfo.start(t0);
+    [[110, 0], [164.81, 4], [220, -6]].forEach(([f, det]) => {
+      const o = this.ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.value = f;
+      o.detune.value = det;
+      o.connect(filter);
+      o.start(t0);
+    });
+    filter.connect(this.amb).connect(this.master);
   },
   setEnabled(on) {
     if (this.master) this.master.gain.value = on ? 0.9 : 0;
@@ -155,6 +182,10 @@ const AudioSys = {
     }
     this.noise(0.3, 0.3, 'lowpass', 700);
   },
+  record() {
+    this.tone(659.25, 'sine', 0.35, 0.01, 0.3);
+    this.tone(987.77, 'sine', 0.3, 0.01, 0.45, 0, 0.1);
+  },
   milestone() {
     // warm low chord for crossing a score milestone
     this.tone(261.63, 'sine', 0.3, 0.02, 0.7);
@@ -186,7 +217,7 @@ const dom = {
   statsLine: $('stats-line'), themeToast: $('theme-toast'),
   gameover: $('gameover'), goScore: $('go-score'), goBest: $('go-best'),
   newBest: $('new-best'), unlockNote: $('unlock-note'), goHint: $('go-hint'),
-  soundBtn: $('sound-btn'),
+  soundBtn: $('sound-btn'), shareBtn: $('share-btn'),
 };
 
 /* ---------------- Game state ---------------- */
@@ -463,6 +494,13 @@ function dropBlock() {
     dom.hudCombo.classList.remove('visible');
   }
 
+  // crossing your old record mid-run deserves its own beat
+  if (best > 0 && score === best + 1) {
+    AudioSys.record();
+    vibrate([12, 24, 12]);
+    spawnFloat('RECORD!', settled.x, settled.z, settled.y + BLOCK_H + 70, '#ffe27a');
+  }
+
   // score milestones get their own moment
   if (score > 0 && score % 25 === 0) {
     AudioSys.milestone();
@@ -597,6 +635,21 @@ function updateSoundBtn() {
   dom.soundBtn.style.opacity = soundOn ? 1 : 0.5;
 }
 
+dom.shareBtn.addEventListener('pointerdown', e => e.stopPropagation());
+dom.shareBtn.addEventListener('click', async e => {
+  e.stopPropagation();
+  const text = `I stacked ${score} blocks in ZENITH 🏗️ Can you beat it?`;
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: 'ZENITH', text, url: location.href.split('?')[0] });
+    } else if (navigator.clipboard) {
+      await navigator.clipboard.writeText(text + ' ' + location.href.split('?')[0]);
+      dom.shareBtn.textContent = 'Copied!';
+      setTimeout(() => { dom.shareBtn.textContent = 'Share'; }, 1400);
+    }
+  } catch {}
+});
+
 dom.soundBtn.addEventListener('pointerdown', e => {
   e.stopPropagation();
   soundOn = !soundOn;
@@ -609,7 +662,7 @@ dom.soundBtn.addEventListener('pointerdown', e => {
 
 /* ---------------- Input ---------------- */
 function onTap(e) {
-  if (e.target.closest && e.target.closest('#sound-btn, .theme-dot')) return;
+  if (e.target.closest && e.target.closest('#sound-btn, #share-btn, .theme-dot')) return;
   AudioSys.init(); AudioSys.resume();
   if (state === 'title') {
     startGame();
@@ -627,6 +680,12 @@ window.addEventListener('keydown', e => {
 document.addEventListener('dblclick', e => e.preventDefault());
 document.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('gesturestart', e => e.preventDefault());
+// silence audio while backgrounded
+document.addEventListener('visibilitychange', () => {
+  if (!AudioSys.ctx) return;
+  if (document.hidden) AudioSys.ctx.suspend();
+  else AudioSys.ctx.resume();
+});
 
 /* ---------------- Update ---------------- */
 function update(dt) {
@@ -736,6 +795,27 @@ function render() {
   ctx.beginPath();
   ctx.ellipse(base.x, base.y + 8 * cam.zoom, BLOCK * ISO_X * U * cam.zoom * 1.15, BLOCK * ISO_Y * U * cam.zoom * 0.9, 0, 0, Math.PI * 2);
   ctx.fill();
+
+  // ghost line at your best height — the thing you're climbing to beat
+  if (best > 0 && (state === 'playing' || state === 'dying') && score <= best) {
+    const lineY = project(0, 0, (best + 1) * BLOCK_H).y;
+    if (lineY > -40 && lineY < H + 40) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,226,122,0.4)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([10, 12]);
+      ctx.beginPath();
+      ctx.moveTo(0, lineY);
+      ctx.lineTo(W, lineY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(255,226,122,0.75)';
+      ctx.font = '700 11px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(`BEST · ${best}`, W - 14, lineY - 7);
+      ctx.restore();
+    }
+  }
 
   // draw settled blocks bottom-up, culling blocks scrolled below the screen
   const cullMargin = BLOCK_H * U * cam.zoom * 3 + 120;
