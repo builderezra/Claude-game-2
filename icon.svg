@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b1745"/>
+      <stop offset="1" stop-color="#3d1f5e"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="110" fill="url(#bg)"/>
+  <!-- stacked iso blocks -->
+  <g>
+    <!-- bottom block -->
+    <polygon points="256,318 368,374 256,430 144,374" fill="#e85d75"/>
+    <polygon points="144,374 256,430 256,486 144,430" fill="#b23c52"/>
+    <polygon points="368,374 256,430 256,486 368,430" fill="#cc4a61"/>
+    <!-- middle block -->
+    <polygon points="256,222 356,272 256,322 156,272" fill="#f2a154"/>
+    <polygon points="156,272 256,322 256,372 156,322" fill="#c0763a"/>
+    <polygon points="356,272 256,322 256,372 356,322" fill="#d98a45"/>
+    <!-- top block -->
+    <polygon points="256,134 344,178 256,222 168,178" fill="#ffd97a"/>
+    <polygon points="168,178 256,222 256,266 168,222" fill="#d2a852"/>
+    <polygon points="344,178 256,222 256,266 344,222" fill="#e8bf62"/>
+    <!-- star -->
+    <circle cx="256" cy="78" r="14" fill="#ffffff"/>
+    <circle cx="256" cy="78" r="26" fill="#ffffff" opacity="0.25"/>
+  </g>
+</svg>
