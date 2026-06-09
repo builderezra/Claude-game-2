@@ -155,6 +155,13 @@ const AudioSys = {
     }
     this.noise(0.3, 0.3, 'lowpass', 700);
   },
+  milestone() {
+    // warm low chord for crossing a score milestone
+    this.tone(261.63, 'sine', 0.3, 0.02, 0.7);
+    this.tone(329.63, 'sine', 0.22, 0.02, 0.7, 0, 0.02);
+    this.tone(392.0, 'sine', 0.22, 0.02, 0.7, 0, 0.04);
+    this.tone(130.81, 'triangle', 0.25, 0.02, 0.8);
+  },
   fanfare() {
     const notes = [523.25, 659.25, 783.99, 1046.5];
     notes.forEach((f, i) => {
@@ -254,9 +261,10 @@ function spawnActive() {
 /* ---------------- Projection ---------------- */
 function project(x, z, y) {
   const zm = U * cam.zoom;
+  const bob = state === 'title' ? Math.sin(time * 0.7) * 5 : 0;   // gentle idle float
   return {
     x: W / 2 + (x - z) * ISO_X * zm + cam.shakeX,
-    y: horizonY + ((x + z) * ISO_Y - (y - cam.y)) * zm + cam.shakeY,
+    y: horizonY + ((x + z) * ISO_Y - (y - cam.y + bob)) * zm + cam.shakeY,
   };
 }
 
@@ -438,6 +446,9 @@ function dropBlock() {
     if (combo >= 2) {
       dom.hudCombo.textContent = `Perfect ×${combo}`;
       dom.hudCombo.classList.add('visible');
+      dom.hudCombo.classList.remove('bump');
+      void dom.hudCombo.offsetWidth;
+      dom.hudCombo.classList.add('bump');
     }
     // regrow reward — only celebrate when width is actually restored
     if (combo >= REGROW_COMBO && (settled.wx < BLOCK || settled.wz < BLOCK)) {
@@ -450,6 +461,14 @@ function dropBlock() {
     AudioSys.drop();
     vibrate(10);
     dom.hudCombo.classList.remove('visible');
+  }
+
+  // score milestones get their own moment
+  if (score > 0 && score % 25 === 0) {
+    AudioSys.milestone();
+    vibrate([14, 30, 14]);
+    spawnFloat(`${score}!`, settled.x, settled.z, settled.y + BLOCK_H + 70, '#ffe27a');
+    spawnBurst(settled.x, settled.z, settled.y + BLOCK_H, settled.color, 26, 260);
   }
 
   dom.hudScore.textContent = score;
@@ -545,6 +564,7 @@ function renderThemes() {
       }
       themeIndex = i;
       store.set('theme', i);
+      stack.forEach((b, idx) => { b.color = blockColor(idx); });   // repaint tower
       AudioSys.init(); AudioSys.resume(); AudioSys.uiTick();
       vibrate(8);
       renderThemes();
@@ -603,9 +623,10 @@ window.addEventListener('pointerdown', onTap, { passive: true });
 window.addEventListener('keydown', e => {
   if (!e.repeat && (e.code === 'Space' || e.code === 'Enter')) onTap(e);
 });
-// block iOS double-tap zoom & context menu
+// block iOS double-tap zoom, pinch gestures & context menu
 document.addEventListener('dblclick', e => e.preventDefault());
 document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('gesturestart', e => e.preventDefault());
 
 /* ---------------- Update ---------------- */
 function update(dt) {
@@ -729,8 +750,19 @@ function render() {
     drawBox(d.x, d.z, d.y, d.wx, d.wz, BLOCK_H, d.color, 0, alpha, d.rot);
   }
 
-  // active sliding block
+  // active sliding block — glows once a combo is rolling
   if (active) {
+    if (combo >= REGROW_COMBO) {
+      const c = project(active.x, active.z, active.y + BLOCK_H / 2);
+      const glowR = (Math.max(active.wx, active.wz) * ISO_X * U * cam.zoom) *
+        (0.9 + Math.min(combo, 18) * 0.04) * (1 + 0.06 * Math.sin(time * 6));
+      const g = ctx.createRadialGradient(c.x, c.y, glowR * 0.15, c.x, c.y, glowR);
+      const heat = Math.min(combo / 15, 1);
+      g.addColorStop(0, `rgba(255,${Math.round(235 - heat * 60)},${Math.round(160 - heat * 90)},${0.16 + heat * 0.18})`);
+      g.addColorStop(1, 'rgba(255,220,140,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(c.x - glowR, c.y - glowR, glowR * 2, glowR * 2);
+    }
     drawBox(active.x, active.z, active.y, active.wx, active.wz, BLOCK_H, active.color, 0);
   }
 

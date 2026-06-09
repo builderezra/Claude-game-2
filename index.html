@@ -86,6 +86,12 @@
     transition: opacity .25s ease, transform .25s ease;
   }
   #hud-combo.visible { opacity: 1; transform: translateY(0); }
+  #hud-combo.bump { animation: combo-pop .22s ease-out; }
+  @keyframes combo-pop {
+    0% { transform: scale(1); }
+    45% { transform: scale(1.25); }
+    100% { transform: scale(1); }
+  }
 
   /* ---------- Title ---------- */
   #title { justify-content: space-between; }
