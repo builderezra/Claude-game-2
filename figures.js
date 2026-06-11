@@ -33,21 +33,30 @@
     return "M" + P(j.neck, flip) + "L" + P(j.hip, flip);
   }
 
+  var _gid = 0; // globally-unique gradient ids (avoids cross-SVG collisions)
   function figureMarkup(j, idx, flip, scale) {
     var col = PALETTE[(j.c != null ? j.c : idx) % PALETTE.length];
-    var gid = "g" + idx + "_" + Math.round(j.head[0]) + "_" + Math.round(j.head[1]);
+    var gid = "pg" + (_gid++);
     var sp = (scale || 1);
     var torsoW = 11 * sp, limbW = 7 * sp, headR = 7.2 * sp;
+    var haloW = 3.6 * sp, halo = "#0b0717";
     var hx = fx(j.head, flip).toFixed(1), hy = j.head[1].toFixed(1);
+    var limbD = limbPath(j, flip), spineD = spinePath(j, flip);
     return (
       '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1">' +
         '<stop offset="0" stop-color="' + col.light + '"/>' +
         '<stop offset="1" stop-color="' + col.base + '"/>' +
       "</linearGradient></defs>" +
-      '<g class="pf-figure" stroke="url(#' + gid + ')" fill="none" ' +
-        'stroke-linecap="round" stroke-linejoin="round">' +
-        '<path d="' + limbPath(j, flip) + '" stroke-width="' + limbW + '"/>' +
-        '<path d="' + spinePath(j, flip) + '" stroke-width="' + torsoW + '"/>' +
+      // dark separation outline so overlapping figures stay distinct
+      '<g fill="none" stroke="' + halo + '" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="' + limbD + '" stroke-width="' + (limbW + haloW) + '"/>' +
+        '<path d="' + spineD + '" stroke-width="' + (torsoW + haloW) + '"/>' +
+      "</g>" +
+      '<circle cx="' + hx + '" cy="' + hy + '" r="' + (headR + haloW / 2) + '" fill="' + halo + '"/>' +
+      // colored body
+      '<g class="pf-figure" stroke="url(#' + gid + ')" fill="none" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="' + limbD + '" stroke-width="' + limbW + '"/>' +
+        '<path d="' + spineD + '" stroke-width="' + torsoW + '"/>' +
       "</g>" +
       '<circle cx="' + hx + '" cy="' + hy + '" r="' + headR + '" fill="url(#' + gid + ')"/>'
     );
@@ -92,8 +101,8 @@
       { head:[26,42], neck:[42,42], hip:[78,42], elbowL:[50,37], handL:[57,35], elbowR:[50,47], handR:[57,49], kneeL:[92,37], footL:[106,35], kneeR:[92,47], footR:[106,47] }
     ],
     facesitting: [
-      { head:[24,68], neck:[38,68], hip:[76,68], elbowL:[32,62], handL:[26,58], elbowR:[34,74], handR:[28,78], kneeL:[90,60], footL:[84,48], kneeR:[92,72], footR:[86,60] },
-      { head:[28,18], neck:[31,32], hip:[36,52], elbowL:[22,40], handL:[18,48], elbowR:[42,40], handR:[48,48], kneeL:[26,58], footL:[22,70], kneeR:[44,58], footR:[50,70] }
+      { head:[20,74], neck:[34,74], hip:[72,74], elbowL:[28,68], handL:[22,64], elbowR:[30,80], handR:[24,84], kneeL:[86,64], footL:[80,50], kneeR:[88,78], footR:[82,64] },
+      { head:[24,16], neck:[27,30], hip:[31,48], elbowL:[18,38], handL:[13,46], elbowR:[38,38], handR:[44,46], kneeL:[18,56], footL:[15,70], kneeR:[40,56], footR:[46,70] }
     ],
     kneelingOral: [
       { head:[80,22], neck:[80,36], hip:[80,58], elbowL:[72,42], handL:[68,52], elbowR:[88,42], handR:[92,52], kneeL:[76,72], footL:[74,86], kneeR:[84,72], footR:[86,86] },
