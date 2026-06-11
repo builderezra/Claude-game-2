@@ -162,8 +162,11 @@ body {
 .round-btn.ban[data-on="true"] { background: rgba(255,77,110,0.18); border-color: rgba(255,77,110,0.5); }
 .result-name { margin: 2px 0 4px; font-size: 30px; font-weight: 900; letter-spacing: .5px; }
 .result-tagline { margin: 0 0 16px; color: var(--ink-soft); font-size: 15px; }
-.modifier { display: flex; align-items: center; gap: 10px; margin: -6px 0 16px; padding: 11px 14px; border-radius: 12px;
-  background: rgba(70,214,255,0.10); border: 1px solid rgba(70,214,255,0.35); font-size: 14px; font-weight: 600; }
+.modifier { margin: -6px 0 16px; padding: 11px 14px; border-radius: 12px;
+  background: rgba(70,214,255,0.10); border: 1px dashed rgba(70,214,255,0.5); }
+.modifier-head { font-size: 12px; font-weight: 800; color: var(--cyan); letter-spacing: .3px; margin-bottom: 8px; }
+.modifier-note { color: var(--ink-soft); font-weight: 600; }
+.modifier-body { display: flex; align-items: center; gap: 10px; font-size: 14.5px; font-weight: 600; }
 .modifier-kind { font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #0a0613;
   background: var(--cyan); padding: 3px 8px; border-radius: 999px; flex: 0 0 auto; }
 .diff-block { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
@@ -200,8 +203,45 @@ body {
 /* hidden iOS haptic helper */
 .haptic-switch { position: absolute; width: 0; height: 0; overflow: hidden; opacity: 0; pointer-events: none; }
 
+/* ---------- Tabs ---------- */
+.tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+.tab { flex: 1; cursor: pointer; font: inherit; font-weight: 800; font-size: 14px; padding: 11px; border-radius: 12px;
+  background: var(--panel); border: 1px solid var(--panel-border); color: var(--ink-soft); transition: all .15s; }
+.tab[data-on="true"] { color: #160a14; border-color: transparent;
+  background: linear-gradient(180deg, #ffe39a, var(--gold)); box-shadow: 0 8px 20px rgba(255,210,63,0.3); }
+
+/* ---------- Dual difficulty range ---------- */
+.dual-range { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.dr-label { font-size: 11px; width: 28px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 1px; }
+.dual-range input[type=range] { flex: 1; accent-color: var(--pink); }
+.diff-filter strong { color: var(--gold); }
+
+/* ---------- Browse view ---------- */
+.browse-controls { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.browse-search { flex: 1; font: inherit; font-size: 15px; padding: 12px 14px; border-radius: 12px; color: var(--ink);
+  background: var(--panel); border: 1px solid var(--panel-border); }
+.browse-search::placeholder { color: var(--ink-soft); }
+.browse-count { font-size: 12px; color: var(--ink-soft); white-space: nowrap; }
+.catalog { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.cat-group-title { grid-column: 1 / -1; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--gold); margin: 12px 0 2px; }
+.cat-card { display: flex; gap: 12px; align-items: center; cursor: pointer; text-align: left; font: inherit; color: var(--ink);
+  background: var(--panel); border: 1px solid var(--panel-border); border-radius: 14px; padding: 10px; transition: all .15s; }
+.cat-card:hover { border-color: rgba(255,255,255,0.25); transform: translateY(-2px); }
+.cat-card.banned { opacity: 0.45; }
+.cat-card-fig { width: 72px; height: 60px; flex: 0 0 auto;
+  background: radial-gradient(circle at 50% 40%, #1d1233, #0d0820); border-radius: 10px; }
+.cat-card-fig svg { width: 100%; height: 100%; }
+.cat-card-info { min-width: 0; }
+.cat-card-name { font-size: 15px; font-weight: 800; line-height: 1.15; }
+.cat-card-meta { font-size: 11px; color: var(--ink-soft); margin-top: 3px; }
+.cat-card-pips { display: flex; gap: 3px; margin-top: 6px; }
+.cat-card-pips i { width: 14px; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.14); }
+.browse-empty { grid-column: 1 / -1; text-align: center; color: var(--ink-soft); padding: 40px 10px; }
+
 /* ---------- Responsive ---------- */
 @media (max-width: 560px) {
+  .catalog { grid-template-columns: 1fr; }
   .result { grid-template-columns: 1fr; }
   .result-figure { max-width: 240px; margin: 0 auto; }
   .result-name { font-size: 26px; }

@@ -84,16 +84,16 @@
       { head:[26,56], neck:[38,60], hip:[68,64], elbowL:[44,56], handL:[52,52], elbowR:[44,68], handR:[52,72], kneeL:[78,56], footL:[72,48], kneeR:[80,70], footR:[88,76] }
     ],
     lotus: [
-      { head:[52,34], neck:[52,44], hip:[52,66], elbowL:[44,48], handL:[60,46], elbowR:[60,48], handR:[44,46], kneeL:[42,72], footL:[60,74], kneeR:[62,72], footR:[44,74] },
-      { head:[58,30], neck:[58,40], hip:[58,62], elbowL:[50,44], handL:[66,42], elbowR:[66,44], handR:[50,42], kneeL:[48,66], footL:[66,70], kneeR:[68,66], footR:[50,70] }
+      { head:[36,30], neck:[46,44], hip:[56,64], elbowL:[40,40], handL:[58,40], elbowR:[52,42], handR:[64,38], kneeL:[48,72], footL:[68,72], kneeR:[60,72], footR:[42,76] },
+      { head:[80,30], neck:[70,44], hip:[60,64], elbowL:[64,40], handL:[52,40], elbowR:[76,40], handR:[58,38], kneeL:[56,72], footL:[74,76], kneeR:[68,72], footR:[48,72] }
     ],
     sixtynine: [
-      { head:[92,58], neck:[80,58], hip:[40,58], elbowL:[74,50], handL:[68,46], elbowR:[74,66], handR:[68,70], kneeL:[28,50], footL:[20,44], kneeR:[30,66], footR:[22,72] },
-      { head:[28,46], neck:[40,46], hip:[80,46], elbowL:[46,40], handL:[52,36], elbowR:[46,52], handR:[52,56], kneeL:[92,40], footL:[100,36], kneeR:[92,52], footR:[100,56] }
+      { head:[94,58], neck:[78,58], hip:[42,58], elbowL:[70,53], handL:[63,51], elbowR:[70,63], handR:[63,65], kneeL:[28,53], footL:[14,51], kneeR:[28,63], footR:[14,63] },
+      { head:[26,42], neck:[42,42], hip:[78,42], elbowL:[50,37], handL:[57,35], elbowR:[50,47], handR:[57,49], kneeL:[92,37], footL:[106,35], kneeR:[92,47], footR:[106,47] }
     ],
     facesitting: [
-      { head:[24,64], neck:[36,64], hip:[72,64], elbowL:[30,56], handL:[24,50], elbowR:[32,74], handR:[26,80], kneeL:[84,54], footL:[78,42], kneeR:[88,64], footR:[82,52] },
-      { head:[34,18], neck:[34,28], hip:[34,46], elbowL:[26,34], handL:[20,42], elbowR:[42,34], handR:[48,42], kneeL:[26,52], footL:[22,66], kneeR:[42,52], footR:[46,66] }
+      { head:[24,68], neck:[38,68], hip:[76,68], elbowL:[32,62], handL:[26,58], elbowR:[34,74], handR:[28,78], kneeL:[90,60], footL:[84,48], kneeR:[92,72], footR:[86,60] },
+      { head:[28,18], neck:[31,32], hip:[36,52], elbowL:[22,40], handL:[18,48], elbowR:[42,40], handR:[48,48], kneeL:[26,58], footL:[22,70], kneeR:[44,58], footR:[50,70] }
     ],
     kneelingOral: [
       { head:[80,22], neck:[80,36], hip:[80,58], elbowL:[72,42], handL:[68,52], elbowR:[88,42], handR:[92,52], kneeL:[76,72], footL:[74,86], kneeR:[84,72], footR:[86,86] },
@@ -128,16 +128,16 @@
       { head:[76,20], neck:[72,30], hip:[64,48], elbowL:[66,38], handL:[60,44], elbowR:[80,38], handR:[86,44], kneeL:[58,54], footL:[52,62], kneeR:[74,56], footR:[80,64] }
     ],
     eagle: [
-      { head:[18,58], neck:[30,58], hip:[62,58], elbowL:[24,48], handL:[16,40], elbowR:[24,68], handR:[16,76], kneeL:[76,44], footL:[84,34], kneeR:[76,72], footR:[84,82] },
-      { head:[58,42], neck:[60,48], hip:[78,58], elbowL:[52,56], handL:[50,70], elbowR:[66,56], handR:[68,70], kneeL:[90,64], footL:[98,74], kneeR:[86,68], footR:[94,78] }
+      { head:[18,60], neck:[32,60], hip:[62,60], elbowL:[26,54], handL:[20,50], elbowR:[26,66], handR:[20,70], kneeL:[78,46], footL:[88,36], kneeR:[78,74], footR:[88,84] },
+      { head:[56,44], neck:[60,50], hip:[80,60], elbowL:[52,56], handL:[50,68], elbowR:[66,56], handR:[68,68], kneeL:[90,64], footL:[98,72], kneeR:[88,70], footR:[96,78] }
     ],
     anvil: [
       { head:[20,64], neck:[32,64], hip:[60,60], elbowL:[26,56], handL:[20,50], elbowR:[28,72], handR:[22,78], kneeL:[58,40], footL:[44,30], kneeR:[64,42], footR:[50,32] },
       { head:[78,34], neck:[76,44], hip:[68,58], elbowL:[72,50], handL:[62,48], elbowR:[82,50], handR:[86,56], kneeL:[70,70], footL:[74,80], kneeR:[78,70], footR:[82,80] }
     ],
     seated: [
-      { head:[58,30], neck:[58,42], hip:[58,64], elbowL:[48,52], handL:[44,46], elbowR:[68,52], handR:[72,46], kneeL:[46,70], footL:[40,84], kneeR:[70,70], footR:[76,84] },
-      { head:[58,16], neck:[58,28], hip:[58,50], elbowL:[48,32], handL:[66,30], elbowR:[68,32], handR:[50,30], kneeL:[44,52], footL:[38,64], kneeR:[72,52], footR:[78,64] }
+      { head:[44,34], neck:[46,48], hip:[48,68], elbowL:[38,56], handL:[34,50], elbowR:[54,56], handR:[60,62], kneeL:[44,74], footL:[40,88], kneeR:[54,74], footR:[58,88] },
+      { head:[68,22], neck:[64,36], hip:[58,58], elbowL:[58,30], handL:[48,30], elbowR:[72,32], handR:[78,40], kneeL:[50,62], footL:[44,74], kneeR:[68,62], footR:[76,74] }
     ],
 
     // ---------- THREESOME (3 figures) ----------

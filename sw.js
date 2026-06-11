@@ -1,7 +1,7 @@
 /* sw.js — offline cache for the PWA.
  * Network-first so updates always land when online; falls back to cache offline.
  */
-var CACHE = "pr-v3";
+var CACHE = "pr-v4";
 var ASSETS = ["./", "index.html", "styles.css", "figures.js", "data.js", "app.js", "manifest.webmanifest", "icon.svg"];
 
 self.addEventListener("install", function (e) {

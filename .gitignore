@@ -1,5 +1,6 @@
 # Local tooling / preview config — not needed on the live site
 .claude/
+gallery.html
 .DS_Store
 node_modules/
 *.log

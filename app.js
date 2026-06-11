@@ -1,4 +1,4 @@
-/* app.js — Position Roulette v2 */
+/* app.js — Position Roulette v3 */
 (function () {
   "use strict";
 
@@ -9,10 +9,10 @@
   var LAND_INDEX = 44, STRIP_LEN = 50, SPIN_MS = 4200;
   var DIFF_WORDS = ["", "Beginner", "Easy", "Spicy", "Advanced", "Expert"];
   var DIFF_COLORS = ["", "#39d98a", "#9fe23f", "#ffd23f", "#ff8c42", "#ff4d6d"];
-  var LS = "pr_state_v2";
+  var LS = "pr_state_v3";
 
   var state = {
-    people: 2, activeCats: {}, maxDiff: 5, sound: true, challenge: false, hideBanned: true,
+    people: 2, activeCats: {}, diffMin: 1, diffMax: 5, sound: true, challenge: false, hideBanned: true,
     favorites: [], banned: [], spinning: false, history: [], hasSpun: false
   };
 
@@ -23,7 +23,7 @@
   function save() {
     try {
       localStorage.setItem(LS, JSON.stringify({
-        people: state.people, activeCats: state.activeCats, maxDiff: state.maxDiff,
+        people: state.people, activeCats: state.activeCats, diffMin: state.diffMin, diffMax: state.diffMax,
         sound: state.sound, challenge: state.challenge, hideBanned: state.hideBanned,
         favorites: state.favorites, banned: state.banned
       }));
@@ -32,9 +32,7 @@
   function load() {
     try {
       var s = JSON.parse(localStorage.getItem(LS) || "{}");
-      ["people","maxDiff","sound","challenge","hideBanned"].forEach(function (k) {
-        if (s[k] !== undefined) state[k] = s[k];
-      });
+      ["people","diffMin","diffMax","sound","challenge","hideBanned"].forEach(function (k) { if (s[k] !== undefined) state[k] = s[k]; });
       if (s.activeCats) state.activeCats = s.activeCats;
       if (Array.isArray(s.favorites)) state.favorites = s.favorites;
       if (Array.isArray(s.banned)) state.banned = s.banned;
@@ -51,6 +49,21 @@
     });
   }
 
+  // ===================== Tabs =====================
+  function initTabs() {
+    $("tabSpin").addEventListener("click", function () { switchView("spin"); });
+    $("tabBrowse").addEventListener("click", function () { switchView("browse"); });
+  }
+  function switchView(v) {
+    var spin = v === "spin";
+    $("viewSpin").classList.toggle("hidden", !spin);
+    $("viewBrowse").classList.toggle("hidden", spin);
+    $("tabSpin").setAttribute("data-on", spin ? "true" : "false");
+    $("tabBrowse").setAttribute("data-on", spin ? "false" : "true");
+    if (!spin) buildCatalog($("browseSearch").value);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   // ===================== People selector =====================
   function buildPeople() {
     var box = $("peopleSel"); box.innerHTML = "";
@@ -62,9 +75,7 @@
       el.innerHTML = '<span class="pe">' + p.emoji + '</span><span class="pl">' + p.label + "</span>";
       el.addEventListener("click", function () {
         state.people = n; save();
-        Array.prototype.forEach.call(box.children, function (c, i) {
-          c.setAttribute("data-on", (i === n - 1) ? "true" : "false");
-        });
+        Array.prototype.forEach.call(box.children, function (c, i) { c.setAttribute("data-on", (i === n - 1) ? "true" : "false"); });
         buildChips(); refreshAvailability();
         if (!state.hasSpun) showPlaceholder();
       });
@@ -78,7 +89,6 @@
     POSITIONS.forEach(function (p) { if (p.people === state.people) p.cats.forEach(function (c) { set[c] = true; }); });
     return Object.keys(CATS).filter(function (k) { return set[k]; });
   }
-
   function buildChips() {
     var box = $("catChips"); box.innerHTML = "";
     catsForPeople().forEach(function (key) {
@@ -104,39 +114,47 @@
   }
   function updateSummary() {
     var rel = catsForPeople(), on = rel.filter(function (k) { return state.activeCats[k] !== false; });
-    var txt = PEOPLE[state.people].label + " · " +
-      (on.length === rel.length ? "all categories" : on.length + "/" + rel.length + " categories") +
-      " · ≤" + state.maxDiff;
-    $("filtersSummary").textContent = txt;
+    var d = state.diffMin === state.diffMax ? ("=" + state.diffMin) : (state.diffMin + "–" + state.diffMax);
+    $("filtersSummary").textContent = PEOPLE[state.people].label + " · " +
+      (on.length === rel.length ? "all categories" : on.length + "/" + rel.length + " cats") + " · diff " + d;
   }
-
   function initFilters() {
     $("filtersToggle").addEventListener("click", function () {
-      var body = $("filtersBody"), open = body.classList.toggle("hidden") === false;
+      var open = $("filtersBody").classList.toggle("hidden") === false;
       $("filtersCaret").classList.toggle("open", open);
       this.setAttribute("aria-expanded", open ? "true" : "false");
     });
     $("catAll").addEventListener("click", function () { setAllCats(true); });
     $("catNone").addEventListener("click", function () { setAllCats(false); });
-    var slider = $("diffMax"); slider.value = state.maxDiff; $("diffMaxVal").textContent = state.maxDiff;
-    slider.addEventListener("input", function () {
-      state.maxDiff = parseInt(slider.value, 10); $("diffMaxVal").textContent = state.maxDiff;
-      save(); refreshAvailability(); updateSummary();
+
+    var lo = $("diffMin"), hi = $("diffMax");
+    lo.value = state.diffMin; hi.value = state.diffMax;
+    function paintRange() {
+      $("diffRangeVal").textContent = state.diffMin === state.diffMax ? state.diffMin : (state.diffMin + " – " + state.diffMax);
+    }
+    paintRange();
+    lo.addEventListener("input", function () {
+      state.diffMin = parseInt(lo.value, 10);
+      if (state.diffMin > state.diffMax) { state.diffMax = state.diffMin; hi.value = state.diffMax; }
+      paintRange(); save(); refreshAvailability(); updateSummary();
     });
+    hi.addEventListener("input", function () {
+      state.diffMax = parseInt(hi.value, 10);
+      if (state.diffMax < state.diffMin) { state.diffMin = state.diffMax; lo.value = state.diffMin; }
+      paintRange(); save(); refreshAvailability(); updateSummary();
+    });
+
     var ch = $("challengeToggle"); ch.checked = state.challenge;
     ch.addEventListener("change", function () { state.challenge = ch.checked; save(); });
     var hb = $("hideBanned"); hb.checked = state.hideBanned;
     hb.addEventListener("change", function () { state.hideBanned = hb.checked; save(); refreshAvailability(); });
   }
-  function setAllCats(on) {
-    catsForPeople().forEach(function (k) { state.activeCats[k] = on; });
-    buildChips(); save(); refreshAvailability();
-  }
+  function setAllCats(on) { catsForPeople().forEach(function (k) { state.activeCats[k] = on; }); buildChips(); save(); refreshAvailability(); }
 
   function activeList() {
     return POSITIONS.filter(function (p) {
       if (p.people !== state.people) return false;
-      if (p.diff > state.maxDiff) return false;
+      if (p.diff < state.diffMin || p.diff > state.diffMax) return false;
       if (state.hideBanned && state.banned.indexOf(p.id) !== -1) return false;
       return p.cats.some(function (c) { return state.activeCats[c] !== false; });
     });
@@ -149,9 +167,9 @@
 
   // ===================== Tiles =====================
   function diffColor(d) { return DIFF_COLORS[d]; }
-  function pipsHTML(diff) {
+  function pipsHTML(diff, w) {
     var h = "";
-    for (var i = 1; i <= 5; i++) h += '<i style="background:' + (i <= diff ? diffColor(diff) : "rgba(255,255,255,0.14)") + '"></i>';
+    for (var i = 1; i <= 5; i++) h += '<i style="' + (w ? "width:" + w + "px;" : "") + "background:" + (i <= diff ? diffColor(diff) : "rgba(255,255,255,0.14)") + '"></i>';
     return h;
   }
   function tileHTML(p) {
@@ -167,10 +185,7 @@
   function showPlaceholder() {
     reel.style.transition = "none";
     reel.style.transform = "translateY(" + (-(TILE_H - CENTER_OFF)) + "px)";
-    var ph = '<div class="tile placeholder">🎰</div>' +
-             '<div class="tile placeholder">PULL THE LEVER</div>' +
-             '<div class="tile placeholder">🍑🍆💦</div>';
-    reel.innerHTML = ph;
+    reel.innerHTML = '<div class="tile placeholder">🎰</div><div class="tile placeholder">PULL THE LEVER</div><div class="tile placeholder">🍑🍆💦</div>';
   }
 
   // ===================== Spin =====================
@@ -182,17 +197,15 @@
     spinBtn.classList.add("pressed"); setTimeout(function () { spinBtn.classList.remove("pressed"); }, 180);
     leverClunk(); triggerHaptic(30);
 
-    var chosen = randFrom(list);
-    var strip = [];
+    var chosen = randFrom(list), strip = [];
     for (var i = 0; i < STRIP_LEN; i++) strip.push(i === LAND_INDEX ? chosen : randFrom(list));
     reel.innerHTML = strip.map(tileHTML).join("");
 
     reel.classList.add("blur");
     reel.style.transition = "none"; reel.style.transform = "translateY(0px)";
     void reel.offsetHeight;
-    var targetY = -(LAND_INDEX * TILE_H - CENTER_OFF);
     reel.style.transition = "transform " + SPIN_MS + "ms cubic-bezier(0.10,0.72,0.10,1)";
-    reel.style.transform = "translateY(" + targetY + "px)";
+    reel.style.transform = "translateY(" + (-(LAND_INDEX * TILE_H - CENTER_OFF)) + "px)";
 
     startTicks();
     setTimeout(function () { reel.classList.remove("blur"); }, SPIN_MS - 700);
@@ -203,13 +216,19 @@
     setTimeout(finish, SPIN_MS + 120);
   }
 
+  function pickModifier() {
+    var ok = MODIFIERS.filter(function (m) {
+      return (m.minP || 1) <= state.people && state.people <= (m.maxP || 5);
+    });
+    return ok.length ? randFrom(ok) : null;
+  }
+
   function onLanded(p) {
     state.spinning = false; refreshAvailability(); stopTicks();
     jackpot(); burstConfetti(); triggerHaptic([0, 45, 35, 90]);
-    var mod = state.challenge ? randFrom(MODIFIERS) : null;
+    var mod = state.challenge ? pickModifier() : null;
     if (mod) setTimeout(modifierDing, 260);
-    renderResult(p, mod);
-    pushHistory(p);
+    renderResult(p, mod); pushHistory(p);
   }
 
   // ===================== Result =====================
@@ -219,17 +238,14 @@
     if (n > 4) return '<span><i style="background:' + Figures.colorAt(0) + '"></i>Group of ' + n + "</span>";
     var labels = n === 1 ? ["You"] : n === 2 ? ["Partner A", "Partner B"] : [];
     var out = "";
-    for (var i = 0; i < n; i++) {
-      var lab = labels[i] || ("Person " + (i + 1));
-      out += '<span><i style="background:' + Figures.colorAt(i) + '"></i>' + lab + "</span>";
-    }
+    for (var i = 0; i < n; i++) out += '<span><i style="background:' + Figures.colorAt(i) + '"></i>' + (labels[i] || ("Person " + (i + 1))) + "</span>";
     return out;
   }
 
   var currentResult = null;
   function renderResult(p, mod) {
     currentResult = p;
-    var res = $("result"); res.classList.remove("hidden");
+    $("result").classList.remove("hidden");
     $("resultSvg").innerHTML = Figures.render(p.pose, { flip: p.flip, neon: true, ground: true });
     $("resultLegend").innerHTML = legendHTML(p.pose);
 
@@ -238,14 +254,10 @@
       var t = document.createElement("span"); t.className = "cat-tag"; t.textContent = CATS[k].label;
       t.style.background = CATS[k].color; catsBox.appendChild(t);
     });
-    if (p.needsToy) {
-      var toy = document.createElement("span"); toy.className = "cat-tag"; toy.textContent = "🧸 Toy";
-      toy.style.background = "#5ce0c8"; catsBox.appendChild(toy);
-    }
+    if (p.needsToy) { var toy = document.createElement("span"); toy.className = "cat-tag"; toy.textContent = "🧸 Toy"; toy.style.background = "#5ce0c8"; catsBox.appendChild(toy); }
 
     $("favBtn").setAttribute("data-on", state.favorites.indexOf(p.id) !== -1 ? "true" : "false");
     $("banBtn").setAttribute("data-on", state.banned.indexOf(p.id) !== -1 ? "true" : "false");
-
     $("resultName").textContent = p.name;
     $("resultTagline").textContent = p.tagline;
 
@@ -254,17 +266,14 @@
     else mc.classList.add("hidden");
 
     var bar = $("diffBar").children;
-    for (var i = 0; i < bar.length; i++) {
-      bar[i].classList.remove("on");
-      bar[i].style.background = i < p.diff ? diffColor(p.diff) : "rgba(255,255,255,0.12)";
-    }
+    for (var i = 0; i < bar.length; i++) { bar[i].classList.remove("on"); bar[i].style.background = i < p.diff ? diffColor(p.diff) : "rgba(255,255,255,0.12)"; }
     var idx = 0, iv = setInterval(function () { if (idx >= p.diff) return clearInterval(iv); bar[idx].classList.add("on"); idx++; }, 90);
     $("diffWord").textContent = DIFF_WORDS[p.diff]; $("diffWord").style.color = diffColor(p.diff);
 
     var steps = $("resultSteps"); steps.innerHTML = "";
     p.steps.forEach(function (s) { var li = document.createElement("li"); li.textContent = s; steps.appendChild(li); });
     $("resultTip").textContent = p.tip;
-    res.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    $("result").scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
   function pushHistory(p) {
@@ -282,26 +291,20 @@
       box.appendChild(chip);
     });
   }
-  function favPositions() {
-    return state.favorites.map(function (id) { return POSITIONS.filter(function (p) { return p.id === id; })[0]; }).filter(Boolean);
-  }
+  function favPositions() { return state.favorites.map(function (id) { return POSITIONS.filter(function (p) { return p.id === id; })[0]; }).filter(Boolean); }
   function renderFavorites() {
     var box = $("favorites"); box.innerHTML = "";
     var favs = favPositions();
-    if (!favs.length) { box.innerHTML = '<span class="empty-note">Tap ⭐ on a result to save it here.</span>'; }
+    if (!favs.length) box.innerHTML = '<span class="empty-note">Tap ⭐ on a result to save it here.</span>';
     else favs.forEach(function (p) {
       var chip = document.createElement("button"); chip.className = "hchip"; chip.textContent = "⭐ " + p.name;
-      chip.addEventListener("click", function () { renderResult(p, null); });
-      box.appendChild(chip);
+      chip.addEventListener("click", function () { renderResult(p, null); }); box.appendChild(chip);
     });
     if (state.banned.length) {
-      var b = document.createElement("button"); b.className = "hchip";
-      b.textContent = "🚫 " + state.banned.length + " banned — clear";
-      b.addEventListener("click", function () { state.banned = []; save(); refreshAvailability(); renderFavorites(); });
-      box.appendChild(b);
+      var b = document.createElement("button"); b.className = "hchip"; b.textContent = "🚫 " + state.banned.length + " banned — clear";
+      b.addEventListener("click", function () { state.banned = []; save(); refreshAvailability(); renderFavorites(); }); box.appendChild(b);
     }
   }
-
   function initResultButtons() {
     $("favBtn").addEventListener("click", function () {
       if (!currentResult) return;
@@ -320,6 +323,45 @@
     $("againBtn").addEventListener("click", function () { ensureAudio(); spin(); });
   }
 
+  // ===================== Browse / catalog =====================
+  function buildCatalog(filter) {
+    var box = $("catalog"); box.innerHTML = "";
+    var q = (filter || "").trim().toLowerCase();
+    var shown = 0;
+    Object.keys(PEOPLE).forEach(function (key) {
+      var n = parseInt(key, 10);
+      var list = POSITIONS.filter(function (p) {
+        if (p.people !== n) return false;
+        if (!q) return true;
+        return p.name.toLowerCase().indexOf(q) !== -1 || p.cats.some(function (c) { return CATS[c].label.toLowerCase().indexOf(q) !== -1; });
+      }).sort(function (a, b) { return a.diff - b.diff || a.name.localeCompare(b.name); });
+      if (!list.length) return;
+      var title = document.createElement("div"); title.className = "cat-group-title";
+      title.textContent = PEOPLE[n].emoji + " " + PEOPLE[n].label + " · " + list.length;
+      box.appendChild(title);
+      list.forEach(function (p) { box.appendChild(catCard(p)); shown++; });
+    });
+    if (!shown) box.innerHTML = '<div class="browse-empty">No positions match “' + (filter || "") + "”.</div>";
+    $("browseCount").textContent = shown + " of " + POSITIONS.length;
+  }
+  function catCard(p) {
+    var el = document.createElement("button");
+    el.className = "cat-card" + (state.banned.indexOf(p.id) !== -1 ? " banned" : "");
+    var fav = state.favorites.indexOf(p.id) !== -1 ? "⭐ " : "";
+    var meta = p.cats.map(function (k) { return CATS[k].label; }).join(" · ") + (p.needsToy ? " · 🧸" : "");
+    el.innerHTML =
+      '<div class="cat-card-fig">' + Figures.render(p.pose, { flip: p.flip }) + "</div>" +
+      '<div class="cat-card-info"><div class="cat-card-name">' + fav + p.name + "</div>" +
+      '<div class="cat-card-meta">' + meta + "</div>" +
+      '<div class="cat-card-pips">' + pipsHTML(p.diff, 14) + "</div></div>";
+    el.addEventListener("click", function () { renderResult(p, null); switchView("spin"); });
+    return el;
+  }
+  function initBrowse() {
+    var s = $("browseSearch");
+    s.addEventListener("input", function () { buildCatalog(s.value); });
+  }
+
   // ===================== Confetti =====================
   var cc, cctx, parts = [], raf = null;
   function setupConfetti() { cc = $("confetti"); cctx = cc.getContext("2d"); sizeC(); window.addEventListener("resize", sizeC); }
@@ -328,8 +370,8 @@
     var colors = ["#ff4d8d","#46d6ff","#ffd23f","#a06bff","#3fd6a0","#ff7a45"];
     var cx = window.innerWidth / 2, cy = window.innerHeight * 0.32;
     for (var i = 0; i < 130; i++) {
-      var a = Math.random() * Math.PI * 2, s = 4 + Math.random() * 9;
-      parts.push({ x: cx, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 4, size: 4 + Math.random() * 6,
+      var a = Math.random() * Math.PI * 2, sp = 4 + Math.random() * 9;
+      parts.push({ x: cx, y: cy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 4, size: 4 + Math.random() * 6,
         rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.4, color: colors[(Math.random() * colors.length) | 0], life: 1 });
     }
     if (!raf) raf = requestAnimationFrame(stepC);
@@ -347,10 +389,7 @@
 
   // ===================== Sound =====================
   var actx = null, tickTimer = null;
-  function ensureAudio() {
-    if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
-    if (actx && actx.state === "suspended") actx.resume();
-  }
+  function ensureAudio() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (actx && actx.state === "suspended") actx.resume(); }
   function tone(freq, dur, type, vol, when, glideTo) {
     if (!state.sound || !actx) return;
     var t = (when || actx.currentTime), o = actx.createOscillator(), g = actx.createGain();
@@ -364,11 +403,7 @@
   function startTicks() {
     if (!state.sound || !actx) return;
     var t0 = performance.now();
-    (function loop() {
-      var e = performance.now() - t0; if (e > SPIN_MS - 220) return;
-      tone(500 + Math.random() * 120, 0.025, "square", 0.025);
-      tickTimer = setTimeout(loop, 45 + (e / SPIN_MS) * 240);
-    })();
+    (function loop() { var e = performance.now() - t0; if (e > SPIN_MS - 220) return; tone(500 + Math.random() * 120, 0.025, "square", 0.025); tickTimer = setTimeout(loop, 45 + (e / SPIN_MS) * 240); })();
   }
   function stopTicks() { if (tickTimer) { clearTimeout(tickTimer); tickTimer = null; } }
   function jackpot() {
@@ -380,27 +415,24 @@
   // ===================== Haptics =====================
   function triggerHaptic(pattern) {
     try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {}
-    // best-effort iOS 17.4+ switch haptic (only fires on some configs)
-    try { var s = $("hapticSwitch"); if (s) { s.checked = !s.checked; } } catch (e) {}
+    try { var s = $("hapticSwitch"); if (s) s.checked = !s.checked; } catch (e) {}
   }
 
   // ===================== Share =====================
   function initShare() {
     $("shareBtn").addEventListener("click", function () {
       var url = location.href, data = { title: "Position Roulette", text: "Spin for a random position 🎰", url: url };
-      if (navigator.share) { navigator.share(data).catch(function () {}); }
-      else if (navigator.clipboard) { navigator.clipboard.writeText(url).then(function () { toast("Link copied!"); }); }
-      else { toast(url); }
+      if (navigator.share) navigator.share(data).catch(function () {});
+      else if (navigator.clipboard) navigator.clipboard.writeText(url).then(function () { toast("Link copied!"); });
+      else toast(url);
     });
   }
   var toastT = null;
   function toast(msg) {
     var el = $("toast");
-    if (!el) { el = document.createElement("div"); el.id = "toast"; el.style.cssText =
-      "position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#1c1030;border:1px solid rgba(255,255,255,.15);color:#fff;padding:10px 16px;border-radius:12px;z-index:70;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,.5)";
-      document.body.appendChild(el); }
-    el.textContent = msg; el.style.opacity = "1";
-    clearTimeout(toastT); toastT = setTimeout(function () { el.style.opacity = "0"; el.style.transition = "opacity .4s"; }, 1800);
+    if (!el) { el = document.createElement("div"); el.id = "toast"; el.style.cssText = "position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#1c1030;border:1px solid rgba(255,255,255,.15);color:#fff;padding:10px 16px;border-radius:12px;z-index:70;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,.5)"; document.body.appendChild(el); }
+    el.textContent = msg; el.style.opacity = "1"; clearTimeout(toastT);
+    toastT = setTimeout(function () { el.style.opacity = "0"; el.style.transition = "opacity .4s"; }, 1800);
   }
 
   // ===================== Discreet cover =====================
@@ -423,17 +455,13 @@
   }
 
   // ===================== PWA =====================
-  function initPWA() {
-    if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
-      navigator.serviceWorker.register("sw.js").catch(function () {});
-    }
-  }
+  function initPWA() { if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) navigator.serviceWorker.register("sw.js").catch(function () {}); }
 
   // ===================== Init =====================
   function init() {
     reel = $("reel"); spinBtn = $("spinBtn"); emptyMsg = $("emptyMsg");
     load();
-    initGate(); buildPeople(); buildChips(); initFilters(); initResultButtons();
+    initGate(); initTabs(); buildPeople(); buildChips(); initFilters(); initResultButtons(); initBrowse();
     initSound(); initShare(); initCover(); setupConfetti(); initPWA();
     renderChips("history", state.history, "No spins yet."); renderFavorites();
     showPlaceholder(); refreshAvailability();
@@ -441,11 +469,10 @@
     spinBtn.addEventListener("click", function () { ensureAudio(); spin(); });
     document.addEventListener("keydown", function (e) {
       if ((e.code === "Space" || e.code === "Enter") && !state.spinning && !$("app").classList.contains("hidden")
-          && $("cover").classList.contains("hidden") && e.target.tagName !== "INPUT") {
+          && $("cover").classList.contains("hidden") && $("viewSpin").classList.contains("hidden") === false && e.target.tagName !== "INPUT") {
         e.preventDefault(); ensureAudio(); spin();
       }
     });
   }
-
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
