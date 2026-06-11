@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#0a0613" />
+  <title>Spin</title>
+
+  <!-- PWA / add-to-home-screen -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Spin" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎰</text></svg>" />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- 18+ Gate -->
+  <div id="gate" class="gate">
+    <div class="gate-card">
+      <div class="gate-badge">18+</div>
+      <h1>Position Roulette</h1>
+      <p>This contains adult sexual content for consenting adults. By entering you confirm you're at least 18 (or the age of majority where you live) and that adult content is legal for you to view.</p>
+      <div class="gate-actions">
+        <button id="enterBtn" class="btn btn-primary">I'm 18+ — Enter</button>
+        <a href="https://www.google.com" class="btn btn-ghost">Leave</a>
+      </div>
+      <p class="gate-fine">Free · no login · nothing stored on a server · everything lives on your device.</p>
+    </div>
+  </div>
+
+  <!-- App -->
+  <main id="app" class="app hidden">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-coin">🎰</span>
+        <div>
+          <div class="brand-title">POSITION ROULETTE</div>
+          <div class="brand-sub">spin the wheel of fun</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button id="hideBtn" class="icon-btn" title="Hide screen" aria-label="Hide screen">🙈</button>
+        <button id="shareBtn" class="icon-btn" title="Share" aria-label="Share">🔗</button>
+        <button id="soundBtn" class="icon-btn" title="Toggle sound" aria-label="Toggle sound">🔊</button>
+      </div>
+    </header>
+
+    <!-- Participant selector -->
+    <section class="people" id="peopleSel" aria-label="How many people"></section>
+
+    <!-- Filters (collapsible) -->
+    <section class="filters">
+      <button id="filtersToggle" class="filters-head" aria-expanded="false">
+        <span>⚙️ Filters <span id="filtersSummary" class="filters-summary"></span></span>
+        <span id="filtersCaret" class="caret">▾</span>
+      </button>
+      <div id="filtersBody" class="filters-body hidden">
+        <div class="chips-row">
+          <div id="catChips" class="chips" aria-label="Category filters"></div>
+        </div>
+        <div class="filters-tools">
+          <button id="catAll" class="mini-btn">All</button>
+          <button id="catNone" class="mini-btn">None</button>
+        </div>
+        <div class="diff-filter">
+          <label for="diffMax">Max difficulty: <strong id="diffMaxVal">5</strong></label>
+          <input id="diffMax" type="range" min="1" max="5" value="5" step="1" />
+        </div>
+        <label class="switch-row">
+          <input type="checkbox" id="challengeToggle" />
+          <span>🎲 Challenge mode <span class="muted">— add a random twist to each spin</span></span>
+        </label>
+        <label class="switch-row">
+          <input type="checkbox" id="hideBanned" checked />
+          <span>🚫 Hide positions I've banned</span>
+        </label>
+      </div>
+    </section>
+
+    <!-- Slot machine -->
+    <section class="machine">
+      <div class="machine-frame">
+        <div class="bulbs bulbs-top"></div>
+        <div class="reel-window" id="reelWindow">
+          <div class="reel" id="reel"></div>
+          <div class="reel-center"></div>
+          <div class="reel-fade reel-fade-top"></div>
+          <div class="reel-fade reel-fade-bottom"></div>
+        </div>
+        <div class="bulbs bulbs-bottom"></div>
+      </div>
+
+      <button id="spinBtn" class="lever">
+        <span class="lever-text">SPIN</span>
+        <span class="lever-sub">pull your luck</span>
+      </button>
+      <div id="emptyMsg" class="empty-msg hidden">No positions match your filters — loosen them. 🎲</div>
+    </section>
+
+    <!-- Result -->
+    <section id="result" class="result hidden">
+      <div class="result-figure">
+        <div id="resultSvg" class="result-svg"></div>
+        <div class="legend" id="resultLegend"></div>
+      </div>
+      <div class="result-body">
+        <div class="result-toprow">
+          <div class="result-cats" id="resultCats"></div>
+          <div class="result-actions">
+            <button id="favBtn" class="round-btn" title="Favorite" aria-label="Favorite">⭐</button>
+            <button id="banBtn" class="round-btn" title="Ban — never show again" aria-label="Ban">🚫</button>
+          </div>
+        </div>
+        <h2 id="resultName" class="result-name"></h2>
+        <p id="resultTagline" class="result-tagline"></p>
+
+        <div id="modifierCard" class="modifier hidden">
+          <span class="modifier-kind" id="modKind"></span>
+          <span id="modText"></span>
+        </div>
+
+        <div class="diff-block">
+          <span class="diff-label">Difficulty</span>
+          <div class="diff-bar" id="diffBar"><span></span><span></span><span></span><span></span><span></span></div>
+          <span class="diff-word" id="diffWord"></span>
+        </div>
+
+        <h3 class="howto-title">How to</h3>
+        <ol id="resultSteps" class="steps"></ol>
+        <div class="tip" id="resultTip"></div>
+        <button id="againBtn" class="btn btn-primary again-btn">🎲 Spin Again</button>
+      </div>
+    </section>
+
+    <!-- History + Favorites -->
+    <section class="history">
+      <div class="history-label">Recent rolls</div>
+      <div id="history" class="history-chips"></div>
+      <div class="history-label" id="favLabel" style="margin-top:14px;">⭐ Favorites</div>
+      <div id="favorites" class="history-chips"></div>
+    </section>
+
+    <footer class="foot">
+      <p>Play safe, stay consenting, communicate, and use lube where it helps. 💜 Free, just for fun.</p>
+    </footer>
+  </main>
+
+  <!-- Discreet cover -->
+  <div id="cover" class="cover hidden">
+    <div class="cover-clock" id="coverClock">9:41</div>
+    <div class="cover-hint">tap anywhere to return</div>
+  </div>
+
+  <!-- hidden iOS haptic switch -->
+  <label id="hapticLabel" class="haptic-switch" aria-hidden="true"><input type="checkbox" id="hapticSwitch" switch /></label>
+
+  <canvas id="confetti" class="confetti"></canvas>
+
+  <script src="figures.js"></script>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
