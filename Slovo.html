@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Слово — Real Russian, 5 minutes a day</title>
+<style>
+:root{
+  --bg:#0e1320; --bg2:#161d2e; --card:#1b2438; --card2:#232e47;
+  --line:#2c3852; --txt:#eef2fb; --dim:#9aa6c2; --dim2:#6b7896;
+  --accent:#ff5a4d; --accent2:#ffb02e; --good:#33c98a; --bad:#ff5a6e;
+  --blue:#5b8cff; --gold:#ffce54; --purple:#a55cff;
+  --r:18px; --shadow:0 12px 30px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;overscroll-behavior:none}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif;
+  background:radial-gradient(1200px 700px at 80% -10%,#1c2742 0,var(--bg) 55%) fixed;
+  color:var(--txt);min-height:100vh;-webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:560px;margin:0 auto;padding:14px 16px 120px}
+button{font-family:inherit;cursor:pointer;border:none;color:inherit;font-size:inherit}
+.hidden{display:none!important}
+.fadein{animation:fadein .3s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ---- Top bar ---- */
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px;position:sticky;top:0;z-index:15;
+  background:linear-gradient(180deg,var(--bg) 70%,transparent);padding:8px 0 6px}
+.brand{display:flex;align-items:center;gap:9px}
+.logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:grid;place-items:center;font-weight:800;font-size:20px;color:#fff;box-shadow:var(--shadow)}
+.brand h1{font-size:17px;margin:0;letter-spacing:.3px}
+.brand p{margin:0;font-size:10.5px;color:var(--dim);letter-spacing:.4px}
+.stats{display:flex;gap:7px}
+.pill{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 11px;display:flex;align-items:center;gap:5px;font-weight:800;font-size:14px}
+.pill small{color:var(--dim);font-weight:600;font-size:11px}
+
+/* ---- Home: daily card ---- */
+.daily{background:linear-gradient(160deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow);position:relative;overflow:hidden;margin-bottom:8px}
+.daily:after{content:"";position:absolute;right:-40px;top:-40px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(255,176,46,.18),transparent 70%)}
+.daily .drow{display:flex;align-items:center;gap:16px}
+.ringbox{position:relative;width:84px;height:84px;flex:none}
+.ringbox svg{transform:rotate(-90deg)}
+.ringbox .ctr{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.ringbox .ctr b{font-size:19px;line-height:1}
+.ringbox .ctr span{font-size:9.5px;color:var(--dim)}
+.dtxt h2{margin:0 0 3px;font-size:17px}
+.dtxt p{margin:0;color:var(--dim);font-size:13px;line-height:1.45}
+.cta{display:block;width:100%;margin-top:14px;padding:15px;border-radius:15px;font-size:16px;font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 8px 20px rgba(255,90,77,.32);transition:transform .08s}
+.cta:active{transform:scale(.98)}
+.cta.rev{background:linear-gradient(135deg,#3a63c9,var(--blue));box-shadow:0 8px 20px rgba(91,140,255,.3);margin-top:9px}
+.cta.ghost{background:var(--card);border:1px solid var(--line);color:var(--txt);box-shadow:none}
+.cta.done{background:linear-gradient(135deg,#2a7d5b,var(--good))}
+
+/* ---- Path ---- */
+.path{margin-top:18px}
+.uhead{display:flex;align-items:center;gap:12px;border-radius:16px;padding:13px 16px;margin:22px 0 6px;color:#fff;box-shadow:var(--shadow)}
+.uhead .uic{font-size:24px}
+.uhead h3{margin:0;font-size:15px;letter-spacing:.3px}
+.uhead p{margin:2px 0 0;font-size:11.5px;opacity:.85}
+.uhead .ucount{margin-left:auto;font-size:12px;font-weight:800;background:rgba(255,255,255,.2);padding:4px 10px;border-radius:999px}
+.noderow{display:flex;justify-content:center;padding:7px 0;position:relative}
+.node{width:66px;height:66px;border-radius:50%;display:grid;place-items:center;position:relative;
+  background:var(--card2);border:1px solid var(--line);box-shadow:0 6px 0 rgba(0,0,0,.25);transition:transform .1s}
+.node:active{transform:translateY(2px);box-shadow:0 4px 0 rgba(0,0,0,.25)}
+.node .ic{font-size:26px}
+.node.done{background:linear-gradient(135deg,var(--good),#26a06e);border-color:transparent;box-shadow:0 6px 0 #1c6b4a}
+.node.done .ic{font-size:28px}
+.node.current{background:linear-gradient(135deg,var(--accent2),var(--accent));border-color:transparent;box-shadow:0 6px 0 #b23d2f;animation:bob 1.6s ease-in-out infinite}
+.node.locked{opacity:.5;filter:grayscale(.6)}
+.node.gram{border-style:dashed}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.node .stars{position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);font-size:10px;white-space:nowrap}
+.node .startflag{position:absolute;top:-26px;left:50%;transform:translateX(-50%);background:#fff;color:#b23d2f;font-weight:900;
+  font-size:11px;padding:3px 9px;border-radius:8px;letter-spacing:.5px;box-shadow:0 3px 8px rgba(0,0,0,.3)}
+.node .startflag:after{content:"";position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#fff;border-bottom:0}
+.nodelabel{text-align:center;font-size:11px;color:var(--dim2);margin-top:2px}
+
+/* ---- Session ---- */
+.sbar{display:flex;align-items:center;gap:12px;margin:4px 0 16px}
+.sbar .close{font-size:22px;color:var(--dim);background:none;width:30px;flex:none}
+.sprog{flex:1;height:13px;background:var(--bg2);border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.sprog>div{height:100%;background:linear-gradient(90deg,var(--accent2),var(--good));width:0;transition:width .35s;border-radius:999px}
+.shearts{font-size:13px;color:var(--accent);font-weight:800;min-width:34px;text-align:right}
+.combo{position:fixed;top:64px;left:50%;transform:translateX(-50%) scale(.6);opacity:0;font-weight:900;font-size:18px;
+  color:var(--gold);text-shadow:0 2px 8px rgba(0,0,0,.5);z-index:40;pointer-events:none;transition:.2s}
+.combo.show{opacity:1;transform:translateX(-50%) scale(1)}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:var(--shadow)}
+.qtag{font-size:11px;letter-spacing:.6px;text-transform:uppercase;font-weight:800;margin-bottom:10px;color:var(--accent2)}
+.qtag.rev{color:var(--blue)} .qtag.new{color:var(--gold)} .qtag.gram{color:var(--good)} .qtag.build{color:var(--purple)}
+
+.bigru{font-size:42px;font-weight:800;letter-spacing:.5px;line-height:1.12;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.spk{flex:none;width:46px;height:46px;border-radius:50%;background:var(--card2);border:1px solid var(--line);display:grid;place-items:center;font-size:21px;transition:transform .08s}
+.spk:active{transform:scale(.9);background:var(--accent)}
+.spk.sm{width:30px;height:30px;font-size:14px}
+.translit{color:var(--accent2);font-size:17px;margin-top:6px;font-style:italic}
+.meaning{font-size:21px;font-weight:700;margin-top:13px}
+.pos{color:var(--dim2);font-size:12.5px;font-weight:600;margin-top:2px}
+.ex{margin-top:15px;background:var(--bg2);border:1px solid var(--line);border-radius:13px;padding:12px 14px}
+.ex .exru{font-size:17px;font-weight:600;display:flex;align-items:center;gap:8px}
+.ex .exen{color:var(--dim);font-size:13.5px;margin-top:3px}
+.ex .extl{color:var(--accent2);font-size:12px;font-style:italic;margin-top:2px}
+
+.gbody{font-size:15px;line-height:1.65}
+.gbody b{color:var(--accent2)}
+.gbody code{background:var(--bg2);border:1px solid var(--line);padding:1px 6px;border-radius:6px;font-size:14px}
+
+.opts{display:grid;gap:10px;margin-top:6px}
+.opt{background:var(--card2);border:2px solid var(--line);border-radius:14px;padding:15px;font-size:18px;font-weight:600;text-align:left;transition:transform .07s,border-color .15s}
+.opt:active{transform:scale(.985)}
+.opt.correct{border-color:var(--good);background:rgba(51,201,138,.16)}
+.opt.wrong{border-color:var(--bad);background:rgba(255,90,110,.16)}
+.opt.dim{opacity:.4}
+
+.inp{width:100%;font-size:23px;font-weight:700;text-align:center;padding:15px;border-radius:14px;background:var(--bg2);
+  border:2px solid var(--line);color:var(--txt);outline:none}
+.inp:focus{border-color:var(--blue)}
+.inp.correct{border-color:var(--good)} .inp.wrong{border-color:var(--bad)}
+.kbd{display:flex;flex-wrap:wrap;gap:5px;margin-top:11px;justify-content:center}
+.key{min-width:28px;height:40px;padding:0 7px;border-radius:8px;background:var(--card2);border:1px solid var(--line);font-size:17px;font-weight:600;display:grid;place-items:center}
+.key:active{background:var(--accent);color:#fff}
+.key.wide{min-width:58px}
+
+/* word-bank tiles */
+.answerline{min-height:58px;border-bottom:2px dashed var(--line);display:flex;flex-wrap:wrap;gap:7px;align-content:flex-start;padding:8px 2px;margin:6px 0 14px}
+.bank{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;min-height:50px}
+.tile{background:var(--card2);border:1px solid var(--line);border-bottom:3px solid var(--line);border-radius:11px;padding:11px 13px;font-size:17px;font-weight:600;transition:transform .07s,opacity .15s}
+.tile:active{transform:translateY(1px)}
+.tile.used{opacity:.25;pointer-events:none}
+.answerline .tile{border-bottom-width:1px}
+.answerline.correct{border-bottom-color:var(--good)} .answerline.wrong{border-bottom-color:var(--bad)}
+
+/* match pairs */
+.matchgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:6px}
+.mtile{background:var(--card2);border:2px solid var(--line);border-radius:13px;padding:15px 10px;font-size:16px;font-weight:600;min-height:54px;display:flex;align-items:center;justify-content:center;text-align:center;transition:transform .07s,border-color .12s,opacity .2s}
+.mtile:active{transform:scale(.97)}
+.mtile.sel{border-color:var(--blue);background:rgba(91,140,255,.16)}
+.mtile.gone{opacity:0;pointer-events:none}
+.mtile.bad{border-color:var(--bad);animation:shake .3s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+.clozesent{font-size:20px;font-weight:600;line-height:1.6;margin:4px 0 16px}
+.blank{display:inline-block;min-width:74px;border-bottom:2px solid var(--accent2);text-align:center;color:var(--accent2);font-weight:800;padding:0 4px}
+
+.actbtn{display:block;width:100%;margin-top:16px;padding:15px;border-radius:14px;font-size:16px;font-weight:800;background:var(--good);color:#06281a;transition:transform .08s}
+.actbtn:active{transform:scale(.98)}
+.actbtn:disabled{opacity:.4}
+.actbtn.skip{background:var(--card);border:1px solid var(--line);color:var(--dim);margin-top:9px}
+
+/* feedback */
+.fb{position:fixed;left:0;right:0;bottom:0;padding:16px 16px calc(18px + env(safe-area-inset-bottom));
+  background:var(--bg2);border-top:1px solid var(--line);transform:translateY(115%);transition:transform .28s cubic-bezier(.2,.9,.3,1);z-index:30}
+.fb.show{transform:none}
+.fb.ok{box-shadow:0 -5px 0 var(--good) inset} .fb.no{box-shadow:0 -5px 0 var(--bad) inset}
+.fbwrap{max-width:560px;margin:0 auto;display:flex;align-items:center;gap:13px}
+.fbi{font-size:28px;flex:none}
+.fbt b{font-size:15px} .fbt p{margin:2px 0 0;color:var(--dim);font-size:13px}
+.fbt .ans{color:var(--good);font-weight:700}
+.fbbtn{margin-left:auto;flex:none;padding:13px 20px;border-radius:13px;font-weight:800;font-size:14px;background:var(--good);color:#06281a}
+.fb.no .fbbtn{background:var(--accent);color:#fff}
+
+/* nav */
+.nav{position:fixed;left:0;right:0;bottom:0;background:rgba(14,19,32,.94);backdrop-filter:blur(12px);border-top:1px solid var(--line);
+  display:flex;justify-content:space-around;padding:8px 0 calc(8px + env(safe-area-inset-bottom));z-index:20}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;color:var(--dim2);background:none;flex:1}
+.nav button.on{color:var(--accent2)}
+.nav .ni{font-size:20px}
+
+/* alphabet */
+.alpha{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:8px}
+.lcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 5px;text-align:center}
+.lcard .lc{font-size:24px;font-weight:800}
+.lcard .ls{font-size:11.5px;color:var(--accent2)}
+.lcard .lex{font-size:10px;color:var(--dim2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* settings */
+.row{display:flex;align-items:center;justify-content:space-between;padding:14px 15px;background:var(--card);border:1px solid var(--line);border-radius:13px;margin-bottom:9px}
+.row .lbl b{font-size:14.5px} .row .lbl p{margin:3px 0 0;font-size:12px;color:var(--dim)}
+.toggle{width:50px;height:29px;border-radius:999px;background:var(--line);position:relative;transition:.2s;flex:none}
+.toggle.on{background:var(--good)}
+.toggle:after{content:"";position:absolute;top:3px;left:3px;width:23px;height:23px;border-radius:50%;background:#fff;transition:.2s}
+.toggle.on:after{left:24px}
+.stepper{display:flex;align-items:center;gap:13px}
+.stepper button{width:33px;height:33px;border-radius:10px;background:var(--card2);border:1px solid var(--line);font-size:19px;font-weight:800}
+.stepper b{font-size:17px;min-width:20px;text-align:center}
+.danger{color:var(--bad);background:var(--card);border:1px solid var(--line);width:100%;padding:14px;border-radius:13px;font-weight:700;margin-top:6px}
+.muted{color:var(--dim2);font-size:12px;text-align:center;margin-top:16px;line-height:1.6}
+.sectitle{font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--dim2);margin:0 0 9px 3px}
+
+/* done */
+.done-hero{text-align:center;padding:24px 10px 6px}
+.done-hero .big{font-size:58px}
+.done-hero h2{margin:8px 0 4px;font-size:24px}
+.done-hero p{color:var(--dim);margin:0}
+.statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:20px}
+.statgrid .tile2{text-align:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 6px}
+.statgrid .tile2 b{font-size:24px;display:block} .statgrid .tile2 span{font-size:11.5px;color:var(--dim)}
+
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:50}
+</style>
+</head>
+<body>
+<canvas id="confetti" class="hidden"></canvas>
+<div class="combo" id="combo"></div>
+
+<div class="wrap">
+  <div class="top" id="topbar">
+    <div class="brand">
+      <div class="logo">С</div>
+      <div><h1>Слово</h1><p>REAL RUSSIAN · 5 MIN / DAY</p></div>
+    </div>
+    <div class="stats">
+      <div class="pill">🔥 <span id="streakN">0</span></div>
+      <div class="pill">💎 <span id="xpN">0</span></div>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <section id="screen-home">
+    <div class="daily">
+      <div class="drow">
+        <div class="ringbox">
+          <svg width="84" height="84">
+            <circle cx="42" cy="42" r="35" stroke="#2c3852" stroke-width="9" fill="none"/>
+            <circle id="ring" cx="42" cy="42" r="35" stroke="url(#g)" stroke-width="9" fill="none" stroke-linecap="round" stroke-dasharray="220" stroke-dashoffset="220"/>
+            <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffb02e"/><stop offset="1" stop-color="#33c98a"/></linearGradient></defs>
+          </svg>
+          <div class="ctr"><div><b id="ringPct">0%</b><span>goal</span></div></div>
+        </div>
+        <div class="dtxt">
+          <h2 id="heroTitle">Доброе утро 👋</h2>
+          <p id="heroSub">Loading…</p>
+        </div>
+      </div>
+      <button id="continueBtn" class="cta">Continue learning</button>
+      <button id="reviewBtn" class="cta rev hidden">🔁 Review <span id="revCount"></span> due words</button>
+    </div>
+    <div class="path" id="pathHost"></div>
+  </section>
+
+  <!-- SESSION -->
+  <section id="screen-session" class="hidden">
+    <div class="sbar">
+      <button class="close" id="quitBtn">✕</button>
+      <div class="sprog"><div id="sprogBar"></div></div>
+      <div class="shearts" id="shearts">♥♥♥</div>
+    </div>
+    <div id="cardHost"></div>
+  </section>
+
+  <!-- DONE -->
+  <section id="screen-done" class="hidden">
+    <div class="done-hero">
+      <div class="big" id="doneEmoji">🎉</div>
+      <h2 id="doneTitle">Lesson complete!</h2>
+      <p id="doneSub"></p>
+    </div>
+    <div class="statgrid">
+      <div class="tile2"><b id="dXp">+0</b><span>XP earned</span></div>
+      <div class="tile2"><b id="dAcc">0%</b><span>accuracy</span></div>
+      <div class="tile2"><b id="dStreak">0</b><span>day streak</span></div>
+    </div>
+    <button class="cta" style="margin-top:22px" id="doneContinue">Continue</button>
+  </section>
+
+  <!-- ALPHABET -->
+  <section id="screen-alpha" class="hidden">
+    <p class="sectitle">Cyrillic alphabet</p>
+    <p style="color:var(--dim);font-size:13.5px;margin:0 0 14px 2px;line-height:1.5">Tap any letter to hear it. 33 letters — learn to read these and Russian opens up.</p>
+    <div class="alpha" id="alphaGrid"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="screen-settings" class="hidden">
+    <p class="sectitle">Settings</p>
+    <div class="row"><div class="lbl"><b>Transliteration</b><p>Show Latin pronunciation hints</p></div><div class="toggle" id="tgTranslit" onclick="toggle('translit')"></div></div>
+    <div class="row"><div class="lbl"><b>Sound effects</b><p>Correct / wrong / complete chimes</p></div><div class="toggle" id="tgSound" onclick="toggle('sound')"></div></div>
+    <div class="row"><div class="lbl"><b>Haptics</b><p>Vibration feedback on phone</p></div><div class="toggle" id="tgHaptics" onclick="toggle('haptics')"></div></div>
+    <div class="row"><div class="lbl"><b>New words per lesson</b><p>How many fresh items each lesson introduces</p></div>
+      <div class="stepper"><button onclick="bumpNew(-1)">−</button><b id="newPerDay">4</b><button onclick="bumpNew(1)">+</button></div></div>
+    <div class="row"><div class="lbl"><b>Daily goal</b><p id="goalLbl">30 XP</p></div>
+      <div class="stepper"><button onclick="bumpGoal(-1)">−</button><b id="goalN">30</b><button onclick="bumpGoal(1)">+</button></div></div>
+    <div class="row"><div class="lbl"><b>Audio voice</b><p id="voiceState">Checking…</p></div><button class="key wide" onclick="speak('Привет! Как дела?')">▶ Test</button></div>
+    <button class="danger" onclick="resetAll()">Reset all progress</button>
+    <p class="muted">Слово keeps everything on this device. Built on spaced repetition + active recall — the methods that actually carry you to fluency.</p>
+  </section>
+</div>
+
+<!-- feedback -->
+<div class="fb" id="fb">
+  <div class="fbwrap">
+    <div class="fbi" id="fbi">✓</div>
+    <div class="fbt"><b id="fbTitle">Correct!</b><p id="fbBody"></p></div>
+    <button class="fbbtn" id="fbBtn">Continue</button>
+  </div>
+</div>
+
+<!-- nav -->
+<div class="nav" id="nav">
+  <button data-s="home" class="on" onclick="go('home')"><span class="ni">🏠</span>Learn</button>
+  <button data-s="alpha" onclick="go('alpha')"><span class="ni">Аа</span>Alphabet</button>
+  <button data-s="settings" onclick="go('settings')"><span class="ni">⚙️</span>Settings</button>
+</div>
+
+<script>
+/* ===================================================================
+   СЛОВО v2 — Russian trainer. Learning path + SRS + 7 exercise types.
+   =================================================================== */
+
+/* ---------- ALPHABET (hardcoded, taught as the first unit) ---------- */
+const ALPHA = [
+  {ch:'А',low:'а',s:'ah',ex:['мама','mom'],g:1},{ch:'О',low:'о',s:'oh',ex:['окно','window'],g:1},
+  {ch:'М',low:'м',s:'m',ex:['мир','peace'],g:1},{ch:'Т',low:'т',s:'t',ex:['там','there'],g:1},
+  {ch:'К',low:'к',s:'k',ex:['кот','cat'],g:1},{ch:'Е',low:'е',s:'yeh',ex:['нет','no'],g:1},
+  {ch:'В',low:'в',s:'v',ex:['вода','water'],g:2},{ch:'Н',low:'н',s:'n',ex:['ночь','night'],g:2},
+  {ch:'Р',low:'р',s:'r (rolled)',ex:['рука','hand'],g:2},{ch:'С',low:'с',s:'s',ex:['сын','son'],g:2},
+  {ch:'У',low:'у',s:'oo',ex:['утро','morning'],g:2},{ch:'Х',low:'х',s:'kh (loch)',ex:['хлеб','bread'],g:2},
+  {ch:'Б',low:'б',s:'b',ex:['брат','brother'],g:3},{ch:'Г',low:'г',s:'g',ex:['год','year'],g:3},
+  {ch:'Д',low:'д',s:'d',ex:['да','yes'],g:3},{ch:'П',low:'п',s:'p',ex:['папа','dad'],g:3},
+  {ch:'Л',low:'л',s:'l',ex:['луна','moon'],g:3},{ch:'И',low:'и',s:'ee',ex:['имя','name'],g:3},
+  {ch:'З',low:'з',s:'z',ex:['зонт','umbrella'],g:4},{ch:'Ф',low:'ф',s:'f',ex:['фото','photo'],g:4},
+  {ch:'Э',low:'э',s:'eh',ex:['это','this'],g:4},{ch:'Й',low:'й',s:'y (boy)',ex:['чай','tea'],g:4},
+  {ch:'Ы',low:'ы',s:'i (hard)',ex:['ты','you'],g:4},{ch:'Ж',low:'ж',s:'zh',ex:['жена','wife'],g:5},
+  {ch:'Ш',low:'ш',s:'sh',ex:['школа','school'],g:5},{ch:'Щ',low:'щ',s:'shch',ex:['щи','soup'],g:5},
+  {ch:'Ч',low:'ч',s:'ch',ex:['час','hour'],g:5},{ch:'Ц',low:'ц',s:'ts',ex:['цена','price'],g:5},
+  {ch:'Ё',low:'ё',s:'yo',ex:['ёж','hedgehog'],g:6},{ch:'Ю',low:'ю',s:'yu',ex:['юг','south'],g:6},
+  {ch:'Я',low:'я',s:'ya',ex:['я','I'],g:6},{ch:'Ь',low:'ь',s:'soft sign',ex:['день','day'],g:6},
+  {ch:'Ъ',low:'ъ',s:'hard sign',ex:['объект','object'],g:6},
+];
+
+/* ---------- COURSE DATA — verified A1 curriculum: 229 words, 146 sentences, 15 grammar lessons ---------- */
+const COURSE = {"units":[{"id":"greetings","title":"Greetings & Politeness","icon":"👋","color":"#ff5a4d","words":[{"ru":"привет","en":"hi, hello","tl":"privyet","pos":"interjection","gender":null,"note":"informal"},{"ru":"здравствуйте","en":"hello","tl":"zdrastvuytye","pos":"interjection","gender":null,"note":"formal; в silent"},{"ru":"пока","en":"bye","tl":"paka","pos":"interjection","gender":null,"note":"informal"},{"ru":"до свидания","en":"goodbye","tl":"da svidaniya","pos":"phrase","gender":null,"note":"formal"},{"ru":"доброе утро","en":"good morning","tl":"dobraye utra","pos":"phrase","gender":null,"note":""},{"ru":"добрый день","en":"good afternoon","tl":"dobry dyen'","pos":"phrase","gender":null,"note":""},{"ru":"добрый вечер","en":"good evening","tl":"dobry vyechyer","pos":"phrase","gender":null,"note":""},{"ru":"спокойной ночи","en":"good night","tl":"spakoynay nochi","pos":"phrase","gender":null,"note":"said before sleep"},{"ru":"спасибо","en":"thank you","tl":"spasiba","pos":"interjection","gender":null,"note":""},{"ru":"пожалуйста","en":"please; you're welcome","tl":"pazhalusta","pos":"interjection","gender":null,"note":"й often silent"},{"ru":"извините","en":"excuse me, sorry","tl":"izvinitye","pos":"verb","gender":null,"note":"formal; getting attention"},{"ru":"простите","en":"sorry, forgive me","tl":"prastitye","pos":"verb","gender":null,"note":"formal apology"},{"ru":"да","en":"yes","tl":"da","pos":"interjection","gender":null,"note":""},{"ru":"нет","en":"no","tl":"nyet","pos":"interjection","gender":null,"note":""},{"ru":"хорошо","en":"good, okay, fine","tl":"kharasho","pos":"adverb","gender":null,"note":""},{"ru":"очень приятно","en":"nice to meet you","tl":"ochyen' priyatna","pos":"phrase","gender":null,"note":"lit. very pleasant"}],"sentences":[{"ru":"Привет! Как дела?","en":"Hi! How are you?","tl":"privyet! kak dyela?"},{"ru":"Здравствуйте, очень приятно.","en":"Hello, nice to meet you.","tl":"zdrastvuytye, ochyen' priyatna."},{"ru":"Доброе утро! Как ты?","en":"Good morning! How are you?","tl":"dobraye utra! kak ty?"},{"ru":"Спасибо большое!","en":"Thank you very much!","tl":"spasiba bal'shoye!"},{"ru":"Да, хорошо.","en":"Yes, okay.","tl":"da, kharasho."},{"ru":"Нет, спасибо.","en":"No, thank you.","tl":"nyet, spasiba."},{"ru":"Извините, вы говорите по-английски?","en":"Excuse me, do you speak English?","tl":"izvinitye, vy gavaritye pa-angliyski?"},{"ru":"Простите, я не понимаю.","en":"Sorry, I don't understand.","tl":"prastitye, ya nye panimayu."},{"ru":"До свидания! Спокойной ночи.","en":"Goodbye! Good night.","tl":"da svidaniya! spakoynay nochi."},{"ru":"Добрый вечер! Как вы?","en":"Good evening! How are you?","tl":"dobry vyechyer! kak vy?"},{"ru":"Это хорошо.","en":"This is good.","tl":"eta kharasho."},{"ru":"Пока! До завтра.","en":"Bye! See you tomorrow.","tl":"paka! da zaftra."}]},{"id":"people","title":"Me & You","icon":"🧑","color":"#ffb02e","words":[{"ru":"я","en":"I","tl":"ya","pos":"pronoun","gender":null,"note":""},{"ru":"ты","en":"you","tl":"ti","pos":"pronoun","gender":null,"note":"informal sing."},{"ru":"он","en":"he, it","tl":"on","pos":"pronoun","gender":null,"note":""},{"ru":"она","en":"she, it","tl":"ana","pos":"pronoun","gender":null,"note":""},{"ru":"оно","en":"it","tl":"ano","pos":"pronoun","gender":null,"note":"neuter"},{"ru":"мы","en":"we","tl":"mi","pos":"pronoun","gender":null,"note":""},{"ru":"вы","en":"you","tl":"vi","pos":"pronoun","gender":null,"note":"formal/plural"},{"ru":"они","en":"they","tl":"ani","pos":"pronoun","gender":null,"note":""},{"ru":"это","en":"this is, this/that","tl":"eta","pos":"pronoun","gender":null,"note":"\"this is...\""},{"ru":"меня зовут","en":"my name is","tl":"minya zavut","pos":"phrase","gender":null,"note":"lit. \"they call me\""},{"ru":"тебя зовут","en":"your name is","tl":"tibya zavut","pos":"phrase","gender":null,"note":"informal"},{"ru":"как","en":"how","tl":"kak","pos":"adverb","gender":null,"note":""},{"ru":"имя","en":"name (first name)","tl":"imya","pos":"noun","gender":"n","note":""},{"ru":"друг","en":"friend","tl":"druk","pos":"noun","gender":"m","note":"f: подруга"},{"ru":"очень","en":"very","tl":"ochin'","pos":"adverb","gender":null,"note":""},{"ru":"тоже","en":"also, too","tl":"tozhe","pos":"adverb","gender":null,"note":""},{"ru":"да","en":"yes","tl":"da","pos":"interjection","gender":null,"note":""},{"ru":"нет","en":"no","tl":"nyet","pos":"interjection","gender":null,"note":""}],"sentences":[{"ru":"Привет! Меня зовут Анна.","en":"Hi! My name is Anna.","tl":"privyet! minya zavut anna."},{"ru":"Как тебя зовут?","en":"What is your name?","tl":"kak tibya zavut?"},{"ru":"Меня зовут Иван.","en":"My name is Ivan.","tl":"minya zavut ivan."},{"ru":"Это мой друг.","en":"This is my friend.","tl":"eta moy druk."},{"ru":"Это Анна. Она моя подруга.","en":"This is Anna. She is my friend.","tl":"eta anna. ana maya padruga."},{"ru":"Я очень рад.","en":"I am very glad.","tl":"ya ochin' rat."},{"ru":"Очень приятно!","en":"Very nice to meet you!","tl":"ochin' priyatna!"},{"ru":"Я тоже.","en":"Me too.","tl":"ya tozhe."},{"ru":"Кто это?","en":"Who is this?","tl":"kto eta?"},{"ru":"Это он, а это она.","en":"This is him, and this is her.","tl":"eta on, a eta ana."},{"ru":"Мы друзья.","en":"We are friends.","tl":"mi druz'ya."},{"ru":"Как вас зовут?","en":"What is your name? (formal)","tl":"kak vas zavut?"}]},{"id":"family","title":"Family & People","icon":"👨‍👩‍👧","color":"#5b8cff","words":[{"ru":"семья","en":"family","tl":"sem'ya","pos":"noun","gender":"f","note":"stress on -я"},{"ru":"мама","en":"mom","tl":"mama","pos":"noun","gender":"f","note":"informal"},{"ru":"папа","en":"dad","tl":"papa","pos":"noun","gender":"m","note":"informal; looks f, is m"},{"ru":"мать","en":"mother","tl":"mat'","pos":"noun","gender":"f","note":"formal"},{"ru":"отец","en":"father","tl":"atyets","pos":"noun","gender":"m","note":"formal"},{"ru":"брат","en":"brother","tl":"brat","pos":"noun","gender":"m","note":"pl: братья"},{"ru":"сестра","en":"sister","tl":"sistra","pos":"noun","gender":"f","note":"pl: сёстры"},{"ru":"сын","en":"son","tl":"syn","pos":"noun","gender":"m","note":"pl: сыновья"},{"ru":"дочь","en":"daughter","tl":"doch'","pos":"noun","gender":"f","note":""},{"ru":"бабушка","en":"grandmother","tl":"babushka","pos":"noun","gender":"f","note":""},{"ru":"дедушка","en":"grandfather","tl":"dedushka","pos":"noun","gender":"m","note":"looks f, is m"},{"ru":"муж","en":"husband","tl":"muzh","pos":"noun","gender":"m","note":"pl: мужья"},{"ru":"жена","en":"wife","tl":"zhena","pos":"noun","gender":"f","note":"pl: жёны"},{"ru":"ребёнок","en":"child","tl":"rebyonak","pos":"noun","gender":"m","note":"pl: дети"},{"ru":"дети","en":"children","tl":"deti","pos":"noun","gender":"pl","note":"pl of ребёнок"},{"ru":"друг","en":"friend (male)","tl":"druk","pos":"noun","gender":"m","note":"pl: друзья"},{"ru":"подруга","en":"friend (female)","tl":"padruga","pos":"noun","gender":"f","note":""},{"ru":"мужчина","en":"man","tl":"mushchina","pos":"noun","gender":"m","note":"looks f, is m"},{"ru":"женщина","en":"woman","tl":"zhenshchina","pos":"noun","gender":"f","note":""}],"sentences":[{"ru":"Это моя семья.","en":"This is my family.","tl":"eta maya sem'ya."},{"ru":"Это мама и папа.","en":"This is mom and dad.","tl":"eta mama i papa."},{"ru":"У меня есть брат и сестра.","en":"I have a brother and a sister.","tl":"u menya yest' brat i sistra."},{"ru":"Мой отец дома.","en":"My father is at home.","tl":"moy atyets doma."},{"ru":"Моя мать тут.","en":"My mother is here.","tl":"maya mat' tut."},{"ru":"Это мой сын.","en":"This is my son.","tl":"eta moy syn."},{"ru":"Это моя дочь.","en":"This is my daughter.","tl":"eta maya doch'."},{"ru":"Где бабушка и дедушка?","en":"Where are grandma and grandpa?","tl":"gde babushka i dedushka?"},{"ru":"Мы с мужем дома.","en":"My husband and I are at home.","tl":"my s muzhem doma."},{"ru":"Это его жена.","en":"This is his wife.","tl":"eta yevo zhena."},{"ru":"У нас есть дети.","en":"We have children.","tl":"u nas yest' deti."},{"ru":"Это моя подруга.","en":"This is my friend (female).","tl":"eta maya padruga."}]},{"id":"questions","title":"Asking Questions","icon":"❓","color":"#33c98a","words":[{"ru":"что","en":"what","tl":"shto","pos":"pronoun","gender":null,"note":"ч sounds like 'sh' here"},{"ru":"кто","en":"who","tl":"kto","pos":"pronoun","gender":null,"note":""},{"ru":"где","en":"where","tl":"gde","pos":"adverb","gender":null,"note":"location"},{"ru":"когда","en":"when","tl":"kagda","pos":"adverb","gender":null,"note":""},{"ru":"почему","en":"why","tl":"pachimu","pos":"adverb","gender":null,"note":"asks for a reason"},{"ru":"как","en":"how","tl":"kak","pos":"adverb","gender":null,"note":""},{"ru":"сколько","en":"how many, how much","tl":"skol'ka","pos":"adverb","gender":null,"note":"takes the genitive"},{"ru":"какой","en":"which, what kind of","tl":"kakoy","pos":"pronoun","gender":null,"note":"agrees with the noun"},{"ru":"чей","en":"whose","tl":"chey","pos":"pronoun","gender":null,"note":"m: чей, f: чья"},{"ru":"куда","en":"where to","tl":"kuda","pos":"adverb","gender":null,"note":"direction"},{"ru":"откуда","en":"where from","tl":"atkuda","pos":"adverb","gender":null,"note":"origin"},{"ru":"можно","en":"may I, is it allowed","tl":"mozhna","pos":"adverb","gender":null,"note":"asking permission"}],"sentences":[{"ru":"Что это?","en":"What is this?","tl":"shto eta?"},{"ru":"Кто ты?","en":"Who are you?","tl":"kto ty?"},{"ru":"Где ты?","en":"Where are you?","tl":"gde ty?"},{"ru":"Куда ты идёшь?","en":"Where are you going?","tl":"kuda ty idyosh'?"},{"ru":"Откуда ты?","en":"Where are you from?","tl":"atkuda ty?"},{"ru":"Когда это?","en":"When is it?","tl":"kagda eta?"},{"ru":"Почему не сейчас?","en":"Why not now?","tl":"pachimu ne seychas?"},{"ru":"Как ты?","en":"How are you?","tl":"kak ty?"},{"ru":"Сколько это стоит?","en":"How much does it cost?","tl":"skol'ka eta stoit?"},{"ru":"Какой это цвет?","en":"What colour is this?","tl":"kakoy eta tsvet?"},{"ru":"Чей это дом?","en":"Whose house is this?","tl":"chey eta dom?"},{"ru":"Можно сюда?","en":"May I come here?","tl":"mozhna syuda?"}]},{"id":"numbers","title":"Numbers & Counting","icon":"🔢","color":"#ff7ac0","words":[{"ru":"ноль","en":"zero","tl":"nol'","pos":"number","gender":null,"note":""},{"ru":"один","en":"one","tl":"odin","pos":"number","gender":null,"note":"m; одна (f), одно (n)"},{"ru":"два","en":"two","tl":"dva","pos":"number","gender":null,"note":"две with f nouns"},{"ru":"три","en":"three","tl":"tri","pos":"number","gender":null,"note":""},{"ru":"четыре","en":"four","tl":"chetyre","pos":"number","gender":null,"note":""},{"ru":"пять","en":"five","tl":"pyat'","pos":"number","gender":null,"note":""},{"ru":"шесть","en":"six","tl":"shest'","pos":"number","gender":null,"note":""},{"ru":"семь","en":"seven","tl":"sem'","pos":"number","gender":null,"note":""},{"ru":"восемь","en":"eight","tl":"vosem'","pos":"number","gender":null,"note":""},{"ru":"девять","en":"nine","tl":"devyat'","pos":"number","gender":null,"note":""},{"ru":"десять","en":"ten","tl":"desyat'","pos":"number","gender":null,"note":""},{"ru":"одиннадцать","en":"eleven","tl":"odinnadtsat'","pos":"number","gender":null,"note":""},{"ru":"двенадцать","en":"twelve","tl":"dvenadtsat'","pos":"number","gender":null,"note":""},{"ru":"двадцать","en":"twenty","tl":"dvadtsat'","pos":"number","gender":null,"note":""},{"ru":"сто","en":"hundred","tl":"sto","pos":"number","gender":null,"note":""},{"ru":"тысяча","en":"thousand","tl":"tysyacha","pos":"noun","gender":"f","note":"used as number"},{"ru":"много","en":"many, a lot","tl":"mnogo","pos":"adverb","gender":null,"note":"+ genitive"},{"ru":"мало","en":"few, little","tl":"malo","pos":"adverb","gender":null,"note":"+ genitive"},{"ru":"сколько","en":"how many, how much","tl":"skol'ko","pos":"adverb","gender":null,"note":"question word"}],"sentences":[{"ru":"Один, два, три.","en":"One, two, three.","tl":"odin, dva, tri."},{"ru":"Сколько это стоит?","en":"How much does this cost?","tl":"skol'ko eto stoit?"},{"ru":"У меня два брата.","en":"I have two brothers.","tl":"u menya dva brata."},{"ru":"Это сто рублей.","en":"This is one hundred rubles.","tl":"eto sto rubley."},{"ru":"Здесь много людей.","en":"There are many people here.","tl":"zdes' mnogo lyudey."},{"ru":"У меня мало времени.","en":"I have little time.","tl":"u menya malo vremeni."},{"ru":"Мне десять лет.","en":"I am ten years old.","tl":"mne desyat' let."},{"ru":"Дай мне пять.","en":"Give me five.","tl":"day mne pyat'."},{"ru":"Сколько тебе лет?","en":"How old are you?","tl":"skol'ko tebe let?"},{"ru":"У нас три кошки и одна собака.","en":"We have three cats and one dog.","tl":"u nas tri koshki i odna sobaka."}]},{"id":"food","title":"Food & Drink","icon":"🍞","color":"#ffce54","words":[{"ru":"еда","en":"food","tl":"yeda","pos":"noun","gender":"f","note":""},{"ru":"вода","en":"water","tl":"vada","pos":"noun","gender":"f","note":"acc: воду"},{"ru":"хлеб","en":"bread","tl":"khlyep","pos":"noun","gender":"m","note":""},{"ru":"чай","en":"tea","tl":"chai","pos":"noun","gender":"m","note":""},{"ru":"кофе","en":"coffee","tl":"kofye","pos":"noun","gender":"m","note":"indeclinable"},{"ru":"молоко","en":"milk","tl":"malako","pos":"noun","gender":"n","note":""},{"ru":"сыр","en":"cheese","tl":"sir","pos":"noun","gender":"m","note":""},{"ru":"мясо","en":"meat","tl":"myasa","pos":"noun","gender":"n","note":""},{"ru":"рыба","en":"fish","tl":"riba","pos":"noun","gender":"f","note":""},{"ru":"яблоко","en":"apple","tl":"yablaka","pos":"noun","gender":"n","note":"pl: яблоки"},{"ru":"суп","en":"soup","tl":"sup","pos":"noun","gender":"m","note":""},{"ru":"соль","en":"salt","tl":"sol'","pos":"noun","gender":"f","note":""},{"ru":"сахар","en":"sugar","tl":"sakhar","pos":"noun","gender":"m","note":""},{"ru":"завтрак","en":"breakfast","tl":"zaftrak","pos":"noun","gender":"m","note":""},{"ru":"обед","en":"lunch","tl":"abyet","pos":"noun","gender":"m","note":""},{"ru":"ужин","en":"dinner","tl":"uzhin","pos":"noun","gender":"m","note":""},{"ru":"есть","en":"to eat","tl":"yest'","pos":"verb","gender":null,"note":"я ем, ты ешь"},{"ru":"пить","en":"to drink","tl":"pit'","pos":"verb","gender":null,"note":"я пью, ты пьёшь"},{"ru":"хотеть","en":"to want","tl":"khatyet'","pos":"verb","gender":null,"note":"я хочу, ты хочешь"},{"ru":"вкусно","en":"tasty, delicious","tl":"fkusna","pos":"adverb","gender":null,"note":"это вкусно"},{"ru":"ресторан","en":"restaurant","tl":"restaran","pos":"noun","gender":"m","note":""},{"ru":"меню","en":"menu","tl":"menyu","pos":"noun","gender":"n","note":"indeclinable"},{"ru":"счёт","en":"bill, check","tl":"shchot","pos":"noun","gender":"m","note":""}],"sentences":[{"ru":"Я хочу воду.","en":"I want water.","tl":"ya khachu vodu."},{"ru":"Ты пьёшь чай или кофе?","en":"Do you drink tea or coffee?","tl":"ti pyosh chai ili kofye?"},{"ru":"Это очень вкусно!","en":"This is very tasty!","tl":"eta ochin' fkusna!"},{"ru":"Я ем хлеб и сыр.","en":"I eat bread and cheese.","tl":"ya yem khlyep i sir."},{"ru":"На завтрак я пью кофе.","en":"For breakfast I drink coffee.","tl":"na zaftrak ya pyu kofye."},{"ru":"Дайте меню, пожалуйста.","en":"Give me the menu, please.","tl":"daitye menyu, pazhalsta."},{"ru":"Я хочу суп и рыбу.","en":"I want soup and fish.","tl":"ya khachu sup i ribu."},{"ru":"Мясо очень вкусное.","en":"The meat is very tasty.","tl":"myasa ochin' fkusnaye."},{"ru":"Счёт, пожалуйста.","en":"The bill, please.","tl":"shchot, pazhalsta."},{"ru":"Я не пью молоко.","en":"I don't drink milk.","tl":"ya nye pyu malako."},{"ru":"Где здесь ресторан?","en":"Where's a restaurant around here?","tl":"gdye zdyes' restaran?"},{"ru":"Я хочу чай с сахаром.","en":"I want tea with sugar.","tl":"ya khachu chai s sakharam."},{"ru":"На обед мы едим суп.","en":"For lunch we eat soup.","tl":"na abyet mi yedim sup."}]},{"id":"verbs","title":"Everyday Verbs","icon":"🏃","color":"#7c5cff","words":[{"ru":"быть","en":"to be","tl":"byt'","pos":"verb","gender":null,"note":"present usually omitted; future: буду"},{"ru":"делать","en":"to do, to make","tl":"dyelat'","pos":"verb","gender":null,"note":"я-form: делаю"},{"ru":"знать","en":"to know","tl":"znat'","pos":"verb","gender":null,"note":"я-form: знаю"},{"ru":"думать","en":"to think","tl":"dumat'","pos":"verb","gender":null,"note":"я-form: думаю"},{"ru":"хотеть","en":"to want","tl":"khatyet'","pos":"verb","gender":null,"note":"я-form: хочу; ты хочешь"},{"ru":"мочь","en":"can, to be able to","tl":"moch'","pos":"verb","gender":null,"note":"я-form: могу; ты можешь"},{"ru":"говорить","en":"to speak, to say","tl":"gavarit'","pos":"verb","gender":null,"note":"я-form: говорю"},{"ru":"понимать","en":"to understand","tl":"panimat'","pos":"verb","gender":null,"note":"я-form: понимаю"},{"ru":"читать","en":"to read","tl":"chitat'","pos":"verb","gender":null,"note":"я-form: читаю"},{"ru":"писать","en":"to write","tl":"pisat'","pos":"verb","gender":null,"note":"я-form: пишу; ты пишешь"},{"ru":"видеть","en":"to see","tl":"vidyet'","pos":"verb","gender":null,"note":"я-form: вижу"},{"ru":"любить","en":"to love, to like","tl":"lyubit'","pos":"verb","gender":null,"note":"я-form: люблю; ты любишь"},{"ru":"жить","en":"to live","tl":"zhit'","pos":"verb","gender":null,"note":"я-form: живу; ты живёшь"},{"ru":"работать","en":"to work","tl":"rabotat'","pos":"verb","gender":null,"note":"я-form: работаю"},{"ru":"идти","en":"to go (on foot)","tl":"idti","pos":"verb","gender":null,"note":"я-form: иду; ты идёшь"},{"ru":"ехать","en":"to go (by vehicle)","tl":"yekhat'","pos":"verb","gender":null,"note":"я-form: еду; ты едешь"},{"ru":"дать","en":"to give","tl":"dat'","pos":"verb","gender":null,"note":"perfective; я дам, ты дашь"},{"ru":"есть","en":"to eat","tl":"yest'","pos":"verb","gender":null,"note":"я-form: ем; ты ешь"},{"ru":"пить","en":"to drink","tl":"pit'","pos":"verb","gender":null,"note":"я-form: пью; ты пьёшь"},{"ru":"спать","en":"to sleep","tl":"spat'","pos":"verb","gender":null,"note":"я-form: сплю; ты спишь"}],"sentences":[{"ru":"Я не знаю.","en":"I don't know.","tl":"ya nye znayu."},{"ru":"Ты понимаешь по-русски?","en":"Do you understand Russian?","tl":"ty panimayesh' pa-russki?"},{"ru":"Я хочу есть.","en":"I want to eat.","tl":"ya khachu yest'."},{"ru":"Я люблю читать.","en":"I love to read.","tl":"ya lyublyu chitat'."},{"ru":"Где ты живёшь?","en":"Where do you live?","tl":"gdye ty zhivyosh'?"},{"ru":"Я живу в Москве.","en":"I live in Moscow.","tl":"ya zhivu v maskvye."},{"ru":"Что ты делаешь?","en":"What are you doing?","tl":"shto ty dyelayesh'?"},{"ru":"Я работаю и учусь.","en":"I work and study.","tl":"ya rabotayu i uchus'."},{"ru":"Ты говоришь по-английски?","en":"Do you speak English?","tl":"ty gavarish' pa-angliyski?"},{"ru":"Я не могу спать.","en":"I can't sleep.","tl":"ya nye magu spat'."},{"ru":"Я пью воду.","en":"I drink water.","tl":"ya p'yu vodu."},{"ru":"Я еду домой.","en":"I'm going home.","tl":"ya yedu damoy."},{"ru":"Я вижу тебя.","en":"I see you.","tl":"ya vizhu tyebya."},{"ru":"Дай мне воды, пожалуйста.","en":"Give me some water, please.","tl":"day mnye vody, pazhaluysta."}]},{"id":"home","title":"Home & City","icon":"🏠","color":"#4ec5d8","words":[{"ru":"дом","en":"house, home","tl":"dom","pos":"noun","gender":"m","note":"дома = at home"},{"ru":"квартира","en":"apartment, flat","tl":"kvartira","pos":"noun","gender":"f","note":""},{"ru":"комната","en":"room","tl":"komnata","pos":"noun","gender":"f","note":""},{"ru":"дверь","en":"door","tl":"dver'","pos":"noun","gender":"f","note":"soft-sign f"},{"ru":"окно","en":"window","tl":"okno","pos":"noun","gender":"n","note":"pl: окна"},{"ru":"стол","en":"table, desk","tl":"stol","pos":"noun","gender":"m","note":"на столе"},{"ru":"стул","en":"chair","tl":"stul","pos":"noun","gender":"m","note":"pl: стулья"},{"ru":"кровать","en":"bed","tl":"krovat'","pos":"noun","gender":"f","note":"soft-sign f"},{"ru":"кухня","en":"kitchen","tl":"kuhnya","pos":"noun","gender":"f","note":""},{"ru":"город","en":"city, town","tl":"gorod","pos":"noun","gender":"m","note":"в городе"},{"ru":"улица","en":"street","tl":"ulitsa","pos":"noun","gender":"f","note":"на улице = outside"},{"ru":"магазин","en":"shop, store","tl":"magazin","pos":"noun","gender":"m","note":""},{"ru":"школа","en":"school","tl":"shkola","pos":"noun","gender":"f","note":"в школе"},{"ru":"работа","en":"work, job","tl":"rabota","pos":"noun","gender":"f","note":"на работе"},{"ru":"машина","en":"car","tl":"mashina","pos":"noun","gender":"f","note":"also: machine"},{"ru":"здесь","en":"here","tl":"zdes'","pos":"adverb","gender":null,"note":""},{"ru":"там","en":"there","tl":"tam","pos":"adverb","gender":null,"note":""},{"ru":"в","en":"in, at; to","tl":"v","pos":"preposition","gender":null,"note":"+ prep. (location)"},{"ru":"на","en":"on, at; to","tl":"na","pos":"preposition","gender":null,"note":"+ prep. (location)"},{"ru":"у","en":"at, by; have","tl":"u","pos":"preposition","gender":null,"note":"+ gen.; у меня = I have"}],"sentences":[{"ru":"Это мой дом.","en":"This is my house.","tl":"eta moy dom."},{"ru":"Я дома.","en":"I am at home.","tl":"ya doma."},{"ru":"Книга на столе.","en":"The book is on the table.","tl":"kniga na stole."},{"ru":"Кровать в комнате.","en":"The bed is in the room.","tl":"krovat' v komnate."},{"ru":"Где магазин? Он там.","en":"Where is the shop? It is there.","tl":"gde magazin? on tam."},{"ru":"Я здесь, а ты там.","en":"I am here, and you are there.","tl":"ya zdes', a ty tam."},{"ru":"Мама на кухне.","en":"Mom is in the kitchen.","tl":"mama na kuhnye."},{"ru":"Я на работе.","en":"I am at work.","tl":"ya na rabote."},{"ru":"Школа в городе.","en":"The school is in the city.","tl":"shkola v gorode."},{"ru":"У меня есть машина.","en":"I have a car.","tl":"u menya yest' mashina."},{"ru":"Окно и дверь здесь.","en":"The window and the door are here.","tl":"okno i dver' zdes'."},{"ru":"Магазин на улице.","en":"The shop is on the street.","tl":"magazin na ulitse."},{"ru":"Это не моя квартира.","en":"This is not my apartment.","tl":"eta ne moya kvartira."}]},{"id":"time","title":"Time & Days","icon":"⏰","color":"#ff9f43","words":[{"ru":"день","en":"day","tl":"den'","pos":"noun","gender":"m","note":"день-ночь pair"},{"ru":"ночь","en":"night","tl":"noch'","pos":"noun","gender":"f","note":""},{"ru":"утро","en":"morning","tl":"ootro","pos":"noun","gender":"n","note":"утром = in the morning"},{"ru":"вечер","en":"evening","tl":"vyecher","pos":"noun","gender":"m","note":"вечером = in the evening"},{"ru":"неделя","en":"week","tl":"nedyelya","pos":"noun","gender":"f","note":""},{"ru":"месяц","en":"month","tl":"myesyats","pos":"noun","gender":"m","note":""},{"ru":"год","en":"year","tl":"got","pos":"noun","gender":"m","note":""},{"ru":"час","en":"hour; o'clock","tl":"chas","pos":"noun","gender":"m","note":""},{"ru":"минута","en":"minute","tl":"minoota","pos":"noun","gender":"f","note":""},{"ru":"сегодня","en":"today","tl":"syevodnya","pos":"adverb","gender":null,"note":"г = v"},{"ru":"завтра","en":"tomorrow","tl":"zavtra","pos":"adverb","gender":null,"note":""},{"ru":"вчера","en":"yesterday","tl":"vchera","pos":"adverb","gender":null,"note":""},{"ru":"сейчас","en":"now","tl":"seychas","pos":"adverb","gender":null,"note":""},{"ru":"время","en":"time","tl":"vryemya","pos":"noun","gender":"n","note":"neuter"},{"ru":"рано","en":"early","tl":"rana","pos":"adverb","gender":null,"note":""},{"ru":"поздно","en":"late","tl":"pozna","pos":"adverb","gender":null,"note":"д silent"},{"ru":"понедельник","en":"Monday","tl":"ponedyel'nik","pos":"noun","gender":"m","note":""},{"ru":"суббота","en":"Saturday","tl":"soobota","pos":"noun","gender":"f","note":"double б"},{"ru":"воскресенье","en":"Sunday","tl":"vaskresyen'ye","pos":"noun","gender":"n","note":""},{"ru":"всегда","en":"always","tl":"vsegda","pos":"adverb","gender":null,"note":""}],"sentences":[{"ru":"Сейчас час.","en":"It's one o'clock now.","tl":"seychas chas."},{"ru":"Сегодня понедельник.","en":"Today is Monday.","tl":"syevodnya ponedyel'nik."},{"ru":"Завтра суббота.","en":"Tomorrow is Saturday.","tl":"zavtra soobota."},{"ru":"Сейчас утро.","en":"It's morning now.","tl":"seychas ootro."},{"ru":"Вчера был вечер, а сейчас ночь.","en":"Yesterday it was evening, and now it's night.","tl":"vchera byl vyecher, a seychas noch'."},{"ru":"Я рано встаю.","en":"I get up early.","tl":"ya rana fstayu."},{"ru":"Это поздно.","en":"That's late.","tl":"eta pozna."},{"ru":"У меня нет времени.","en":"I don't have time.","tl":"oo menya nyet vryemeni."},{"ru":"Одна минута, и я иду.","en":"One minute, and I'm coming.","tl":"adna minoota, i ya idoo."},{"ru":"В воскресенье я дома.","en":"On Sunday I'm at home.","tl":"v vaskresyen'ye ya doma."},{"ru":"Сегодня хороший день.","en":"Today is a good day.","tl":"syevodnya horoshiy den'."},{"ru":"Я всегда дома вечером.","en":"I'm always home in the evening.","tl":"ya vsegda doma vyecherom."}]},{"id":"adjectives","title":"Describing Things","icon":"🎨","color":"#26d07c","words":[{"ru":"большой","en":"big, large","tl":"bal'shoy","pos":"adjective","gender":null,"note":""},{"ru":"маленький","en":"small, little","tl":"malen'kiy","pos":"adjective","gender":null,"note":""},{"ru":"новый","en":"new","tl":"novyy","pos":"adjective","gender":null,"note":""},{"ru":"старый","en":"old","tl":"staryy","pos":"adjective","gender":null,"note":""},{"ru":"хороший","en":"good","tl":"khoroshiy","pos":"adjective","gender":null,"note":""},{"ru":"плохой","en":"bad","tl":"plokhoy","pos":"adjective","gender":null,"note":""},{"ru":"красивый","en":"beautiful, pretty","tl":"krasivyy","pos":"adjective","gender":null,"note":""},{"ru":"молодой","en":"young","tl":"maladoy","pos":"adjective","gender":null,"note":""},{"ru":"быстрый","en":"fast, quick","tl":"bystryy","pos":"adjective","gender":null,"note":""},{"ru":"медленный","en":"slow","tl":"medlennyy","pos":"adjective","gender":null,"note":""},{"ru":"тёплый","en":"warm","tl":"tyoplyy","pos":"adjective","gender":null,"note":""},{"ru":"холодный","en":"cold","tl":"kholodnyy","pos":"adjective","gender":null,"note":""},{"ru":"дорогой","en":"expensive; dear","tl":"daragoy","pos":"adjective","gender":null,"note":"also 'dear'"},{"ru":"дешёвый","en":"cheap","tl":"deshyovyy","pos":"adjective","gender":null,"note":""},{"ru":"лёгкий","en":"easy; light","tl":"lyogkiy","pos":"adjective","gender":null,"note":"opp. of трудный"},{"ru":"трудный","en":"hard, difficult","tl":"trudnyy","pos":"adjective","gender":null,"note":""},{"ru":"важный","en":"important","tl":"vazhnyy","pos":"adjective","gender":null,"note":""},{"ru":"счастливый","en":"happy","tl":"shchastlivyy","pos":"adjective","gender":null,"note":"first т is silent"}],"sentences":[{"ru":"Это большой дом.","en":"This is a big house.","tl":"eto bal'shoy dom."},{"ru":"У меня новая машина.","en":"I have a new car.","tl":"u menya novaya mashina."},{"ru":"Это очень хорошая идея.","en":"This is a very good idea.","tl":"eto ochen' khoroshaya ideya."},{"ru":"Сегодня погода плохая.","en":"The weather is bad today.","tl":"segodnya pagoda plokhaya."},{"ru":"Москва — красивый город.","en":"Moscow is a beautiful city.","tl":"maskva — krasivyy gorad."},{"ru":"Мой брат ещё молодой.","en":"My brother is still young.","tl":"moy brat yeshchyo maladoy."},{"ru":"Этот телефон очень дорогой.","en":"This phone is very expensive.","tl":"etot telefon ochen' daragoy."},{"ru":"Эта книга дешёвая.","en":"This book is cheap.","tl":"eta kniga deshyovaya."},{"ru":"Русский язык не лёгкий.","en":"Russian is not easy.","tl":"russkiy yazyk ne lyogkiy."},{"ru":"Это трудный вопрос.","en":"This is a difficult question.","tl":"eto trudnyy vapros."},{"ru":"Вода тёплая, а не холодная.","en":"The water is warm, not cold.","tl":"vada tyoplaya, a ne kholodnaya."},{"ru":"Это очень важный день.","en":"This is a very important day.","tl":"eto ochen' vazhnyy den'."}]},{"id":"travel","title":"Shopping & Travel","icon":"✈️","color":"#ff5a8c","words":[{"ru":"деньги","en":"money","tl":"den'gi","pos":"noun","gender":"pl","note":"plural only"},{"ru":"рубль","en":"ruble","tl":"rubl'","pos":"noun","gender":"m","note":"2-4 рубля, 5 рублей"},{"ru":"цена","en":"price","tl":"tsena","pos":"noun","gender":"f","note":""},{"ru":"билет","en":"ticket","tl":"bilyet","pos":"noun","gender":"m","note":""},{"ru":"поезд","en":"train","tl":"poyezd","pos":"noun","gender":"m","note":""},{"ru":"автобус","en":"bus","tl":"avtobus","pos":"noun","gender":"m","note":""},{"ru":"самолёт","en":"airplane","tl":"samalyot","pos":"noun","gender":"m","note":""},{"ru":"такси","en":"taxi","tl":"taksi","pos":"noun","gender":"n","note":"indeclinable"},{"ru":"аэропорт","en":"airport","tl":"aeraport","pos":"noun","gender":"m","note":"в аэропорту"},{"ru":"гостиница","en":"hotel","tl":"gastinitsa","pos":"noun","gender":"f","note":""},{"ru":"паспорт","en":"passport","tl":"paspart","pos":"noun","gender":"m","note":""},{"ru":"налево","en":"to the left","tl":"nalyeva","pos":"adverb","gender":null,"note":"direction"},{"ru":"направо","en":"to the right","tl":"naprava","pos":"adverb","gender":null,"note":"direction"},{"ru":"прямо","en":"straight ahead","tl":"pryama","pos":"adverb","gender":null,"note":""},{"ru":"далеко","en":"far","tl":"dalyeko","pos":"adverb","gender":null,"note":""},{"ru":"близко","en":"close, near","tl":"blizka","pos":"adverb","gender":null,"note":""},{"ru":"карта","en":"map; card","tl":"karta","pos":"noun","gender":"f","note":"also bank card"},{"ru":"помощь","en":"help","tl":"pomoshch'","pos":"noun","gender":"f","note":""},{"ru":"остановка","en":"stop (bus stop)","tl":"astanovka","pos":"noun","gender":"f","note":""},{"ru":"дорого","en":"expensive","tl":"doraga","pos":"adverb","gender":null,"note":"это дорого"},{"ru":"сколько","en":"how much, how many","tl":"skol'ka","pos":"adverb","gender":null,"note":"+ genitive"},{"ru":"стоить","en":"to cost","tl":"stoit'","pos":"verb","gender":null,"note":"сколько стоит"},{"ru":"где","en":"where","tl":"gdye","pos":"adverb","gender":null,"note":""},{"ru":"извините","en":"excuse me, sorry","tl":"izvinitye","pos":"phrase","gender":null,"note":"polite"}],"sentences":[{"ru":"Сколько стоит билет?","en":"How much does a ticket cost?","tl":"skol'ka stoit bilyet?"},{"ru":"Это очень дорого.","en":"That is very expensive.","tl":"eta ochen' doraga."},{"ru":"Где гостиница?","en":"Where is the hotel?","tl":"gdye gastinitsa?"},{"ru":"Гостиница близко, не далеко.","en":"The hotel is near, not far.","tl":"gastinitsa blizka, nye dalyeko."},{"ru":"Извините, где остановка?","en":"Excuse me, where is the bus stop?","tl":"izvinitye, gdye astanovka?"},{"ru":"Автобус направо, а поезд налево.","en":"The bus is to the right, and the train is to the left.","tl":"avtobus naprava, a poyezd nalyeva."},{"ru":"Идите прямо.","en":"Go straight ahead.","tl":"iditye pryama."},{"ru":"У меня нет денег.","en":"I have no money.","tl":"u menya nyet dyenyeg."},{"ru":"Мне нужна помощь.","en":"I need help.","tl":"mnye nuzhna pomoshch'."},{"ru":"Вот мой паспорт и билет.","en":"Here is my passport and ticket.","tl":"vot moy paspart i bilyet."},{"ru":"Сколько стоит такси в аэропорт?","en":"How much does a taxi to the airport cost?","tl":"skol'ka stoit taksi v aeraport?"},{"ru":"У вас есть карта?","en":"Do you have a map?","tl":"u vas yest' karta?"}]},{"id":"pastfuture","title":"Past & Future","icon":"⏳","color":"#a55cff","words":[{"ru":"был","en":"was/were (m)","tl":"byl","pos":"verb","gender":null,"note":"past of быть, masc."},{"ru":"была","en":"was/were (f)","tl":"byla","pos":"verb","gender":null,"note":"past of быть, fem."},{"ru":"было","en":"was/were (n)","tl":"bylo","pos":"verb","gender":null,"note":"past of быть, neuter"},{"ru":"были","en":"was/were (pl)","tl":"byli","pos":"verb","gender":null,"note":"past of быть, plural"},{"ru":"буду","en":"will be","tl":"budu","pos":"verb","gender":null,"note":"я-form of быть (future)"},{"ru":"вчера","en":"yesterday","tl":"vchira","pos":"adverb","gender":null,"note":""},{"ru":"завтра","en":"tomorrow","tl":"zaftra","pos":"adverb","gender":null,"note":""},{"ru":"сегодня","en":"today","tl":"sivodnya","pos":"adverb","gender":null,"note":"г sounds like 'v'"},{"ru":"потом","en":"then, later","tl":"patom","pos":"adverb","gender":null,"note":""},{"ru":"сначала","en":"first, at first","tl":"snachala","pos":"adverb","gender":null,"note":""},{"ru":"уже","en":"already","tl":"uzhe","pos":"adverb","gender":null,"note":""},{"ru":"ещё","en":"still, yet, more","tl":"yishcho","pos":"adverb","gender":null,"note":""},{"ru":"всегда","en":"always","tl":"fsigda","pos":"adverb","gender":null,"note":""},{"ru":"никогда","en":"never","tl":"nikagda","pos":"adverb","gender":null,"note":"needs не with verb"},{"ru":"иногда","en":"sometimes","tl":"inagda","pos":"adverb","gender":null,"note":""},{"ru":"часто","en":"often","tl":"chasta","pos":"adverb","gender":null,"note":""},{"ru":"редко","en":"rarely, seldom","tl":"redka","pos":"adverb","gender":null,"note":""},{"ru":"сказал","en":"said (m)","tl":"skazal","pos":"verb","gender":null,"note":"past, masc."},{"ru":"пошёл","en":"went (m)","tl":"pashol","pos":"verb","gender":null,"note":"past, masc.; fem. пошла"},{"ru":"хотел","en":"wanted (m)","tl":"khatel","pos":"verb","gender":null,"note":"past, masc.; я-form хочу"}],"sentences":[{"ru":"Вчера я был дома.","en":"Yesterday I was at home.","tl":"vchira ya byl doma."},{"ru":"Она была в Москве.","en":"She was in Moscow.","tl":"ana byla v maskve."},{"ru":"Это было вчера.","en":"That was yesterday.","tl":"eta bylo vchira."},{"ru":"Мы были там.","en":"We were there.","tl":"my byli tam."},{"ru":"Завтра я буду дома.","en":"Tomorrow I will be at home.","tl":"zaftra ya budu doma."},{"ru":"Сначала кофе, потом работа.","en":"First coffee, then work.","tl":"snachala kofe, patom rabota."},{"ru":"Я уже хотел есть.","en":"I already wanted to eat.","tl":"ya uzhe khatel yest'."},{"ru":"Он сказал, что был там.","en":"He said that he was there.","tl":"on skazal, shto byl tam."},{"ru":"Я никогда не был в Париже.","en":"I have never been to Paris.","tl":"ya nikagda ne byl v parizhe."},{"ru":"Мы часто были там.","en":"We were often there.","tl":"my chasta byli tam."},{"ru":"Утром я пошёл в магазин.","en":"In the morning I went to the store.","tl":"utram ya pashol v magazin."},{"ru":"Сегодня я ещё дома, а завтра буду на работе.","en":"Today I'm still at home, but tomorrow I'll be at work.","tl":"sivodnya ya yishcho doma, a zaftra budu na rabote."}]}],"grammar":[{"id":"no-to-be","unit":"greetings","title":"There is no \"to be\" in the present","body":"In Russian, the present tense has no word for <b>am<\/b>, <b>is<\/b>, or <b>are<\/b>. You simply put the two parts side by side: <code>Я студент<\/code> literally means \"I student\".<br>So <b>subject + the rest<\/b> is a full sentence — nothing goes in the middle.","examples":[{"ru":"Я студент.","en":"I am a student.","tl":"ya student"},{"ru":"Это вода.","en":"This is water.","tl":"eta vada"},{"ru":"Он дома.","en":"He is at home.","tl":"on doma"},{"ru":"Мы друзья.","en":"We are friends.","tl":"my druz'ya"}]},{"id":"pronouns","unit":"people","title":"Personal pronouns","body":"Russian personal pronouns are: <b>я<\/b> (I), <b>ты<\/b> (you), <b>он<\/b> (he), <b>она<\/b> (she), <b>оно<\/b> (it), <b>мы<\/b> (we), <b>вы<\/b> (you), <b>они<\/b> (they).<br>Use <b>ты<\/b> for one friend, child, or family member, and <b>вы<\/b> for a stranger, an older person, or several people (it is also the polite form).<br>To introduce yourself, say <code>Меня зовут...<\/code> (literally \"they call me...\", i.e. \"My name is...\") and add your name.","examples":[{"ru":"Меня зовут Анна.","en":"My name is Anna.","tl":"menya zovut anna"},{"ru":"Как тебя зовут?","en":"What's your name? (informal)","tl":"kak tebya zovut"},{"ru":"Как вас зовут?","en":"What's your name? (formal)","tl":"kak vas zovut"},{"ru":"Он студент, а она врач.","en":"He is a student, and she is a doctor.","tl":"on student, a ona vrach"}]},{"id":"gender","unit":"family","title":"Noun gender: he, she, or it","body":"Every Russian noun is masculine, feminine, or neuter, and you can usually tell by the last letter. Nouns ending in a <b>consonant<\/b> are masculine (use <code>он<\/code>), nouns ending in <b>-а/-я<\/b> are feminine (use <code>она<\/code>), and nouns ending in <b>-о/-е<\/b> are neuter (use <code>оно<\/code>).<br>Gender controls which pronoun replaces the noun and which adjective ending you attach: <code>новый<\/code> (masc.), <code>новая<\/code> (fem.), <code>новое<\/code> (neut.).","examples":[{"ru":"новый дом","en":"a new house (masculine)","tl":"novyy dom"},{"ru":"новая книга","en":"a new book (feminine)","tl":"novaya kniga"},{"ru":"новое окно","en":"a new window (neuter)","tl":"novoye okno"},{"ru":"Где машина? Она там.","en":"Where is the car? It (she) is there.","tl":"gde mashina? ona tam"}]},{"id":"questions","unit":"questions","title":"Asking questions","body":"For a <b>yes/no question<\/b>, keep the same words as a statement but say it with a rising voice at the end: <code>Это вода.<\/code> (statement) becomes <code>Это вода?<\/code> (question).<br>To ask about something specific, start with a <b>question word<\/b> like <b>кто<\/b> (who), <b>что<\/b> (what) or <b>где<\/b> (where): <code>Что это?<\/code> = What is this?","examples":[{"ru":"Это вода?","en":"Is this water?","tl":"eta vada?"},{"ru":"Что это?","en":"What is this?","tl":"shto eta?"},{"ru":"Кто это?","en":"Who is this?","tl":"kto eta?"},{"ru":"Где мама?","en":"Where is mom?","tl":"gdye mama?"}]},{"id":"present1","unit":"verbs","title":"Present tense: the -ю/-ешь/-ет pattern","body":"Many Russian verbs (called <b>first-conjugation<\/b> verbs) drop the <code>-ть<\/code> of the infinitive and add a personal ending for each subject.<br>For <code>читать<\/code> (to read): я <b>читаю<\/b>, ты <b>читаешь<\/b>, он/она <b>читает<\/b>, мы <b>читаем<\/b>, вы <b>читаете<\/b>, они <b>читают<\/b>.<br>Notice the pattern: <code>-ю, -ешь, -ет, -ем, -ете, -ют<\/code>. The ending tells you who is doing the action, so the pronoun is sometimes dropped.","examples":[{"ru":"Я читаю книгу.","en":"I am reading a book.","tl":"ya chitayu knigu"},{"ru":"Ты читаешь хорошо.","en":"You read well.","tl":"ty chitayesh' khorosho"},{"ru":"Он читает письмо.","en":"He is reading a letter.","tl":"on chitayet pis'mo"},{"ru":"Мы читаем вместе.","en":"We read together.","tl":"my chitayem vmeste"}]},{"id":"present2","unit":"verbs","title":"Present tense: говорить-type verbs","body":"Second-conjugation verbs like <b>говорить<\/b> (to speak) drop the <code>-ить<\/code> ending and add <code>-ю, -ишь, -ит, -им, -ите, -ят<\/code>.<br>So: <code>я говорю<\/code>, <code>ты говоришь<\/code>, <code>он говорит<\/code>, <code>мы говорим<\/code>, <code>вы говорите<\/code>, <code>они говорят<\/code>.<br>This differs from <b>читать<\/b>-type (first conjugation), which uses <code>-ю, -ешь, -ет, -ем, -ете, -ют<\/code>: <code>я читаю<\/code>, <code>ты читаешь<\/code>. The key giveaway is the <b>и<\/b> vowel in говорить-type endings versus the <b>е<\/b> in читать-type.","examples":[{"ru":"Я говорю по-русски.","en":"I speak Russian.","tl":"ya gavaryu pa-russki"},{"ru":"Ты говоришь медленно.","en":"You speak slowly.","tl":"ty gavarish' myedlenna"},{"ru":"Они говорят громко.","en":"They speak loudly.","tl":"ani gavaryat gromka"},{"ru":"Мы говорим дома.","en":"We speak at home.","tl":"my gavarim doma"}]},{"id":"accusative","unit":"food","title":"The accusative case (direct objects)","body":"The <b>accusative case<\/b> marks the direct object — the thing the action happens to. For feminine nouns ending in <code>-а<\/code>, the ending changes to <code>-у<\/code>.<br>So <code>вода<\/code> (water) becomes <code>воду<\/code>: <b>Я пью воду<\/b> (I drink water). And <code>Москва<\/code> becomes <code>Москву<\/code>: <b>Я люблю Москву<\/b> (I love Moscow).<br>Masculine inanimate nouns and neuter nouns do not change: <code>Я читаю журнал<\/code>, <code>Я пью молоко<\/code>.","examples":[{"ru":"Я пью воду.","en":"I drink water.","tl":"ya p'yu vodu"},{"ru":"Я люблю Москву.","en":"I love Moscow.","tl":"ya lyublyu maskvu"},{"ru":"Я читаю книгу.","en":"I read a book.","tl":"ya chitayu knigu"},{"ru":"Я пью молоко.","en":"I drink milk.","tl":"ya p'yu malako"}]},{"id":"prepositional","unit":"home","title":"The prepositional case (location)","body":"To say <b>where<\/b> something is, Russian uses the prepositions <code>в<\/code> (in), <code>на<\/code> (on/at), and <code>о<\/code> (about) plus the <b>prepositional case<\/b>.<br>For most nouns, just add <b>-е<\/b> to the end: <code>дом<\/code> → <code>в доме<\/code> (in the house), <code>стол<\/code> → <code>на столе<\/code> (on the table).<br>Feminine nouns ending in <code>-а<\/code> swap it for <b>-е<\/b>: <code>Москва<\/code> → <code>в Москве<\/code> (in Moscow).","examples":[{"ru":"Книга на столе.","en":"The book is on the table.","tl":"kniga na stolye"},{"ru":"Мы в доме.","en":"We are in the house.","tl":"my v domye"},{"ru":"Она живёт в Москве.","en":"She lives in Moscow.","tl":"ana zhivyot v maskvye"},{"ru":"Я думаю о работе.","en":"I am thinking about work.","tl":"ya dumayu a rabotye"}]},{"id":"genitive","unit":"travel","title":"The genitive case (of / none)","body":"The genitive case shows possession — it's how Russian says <b>\"of\"<\/b>: <code>книга друга<\/code> = \"a friend's book\" (the book <i>of<\/i> the friend).<br>It's also required after <b>нет<\/b> (\"there is no\"): <code>книга<\/code> becomes <code>нет книги<\/code> — \"there is no book\".<br>Basic endings: masculine nouns take <b>-а<\/b>, feminine nouns take <b>-ы<\/b> (or <b>-и<\/b> after к, г, х, ж, ш).","examples":[{"ru":"Это книга друга.","en":"This is a friend's book.","tl":"eta kniga druga"},{"ru":"Здесь нет книги.","en":"There is no book here.","tl":"zdyes' nyet' knigi"},{"ru":"Это дом брата.","en":"This is a brother's house.","tl":"eta dom brata"},{"ru":"У меня нет воды.","en":"I have no water.","tl":"u menya nyet' vady"}]},{"id":"dative","unit":"travel","title":"The dative case (to / for someone)","body":"The <b>dative case<\/b> marks the person who <i>receives<\/i> something or who likes something.<br>The pronouns change form: <code>я → мне<\/code>, <code>ты → тебе<\/code>, <code>она → ей<\/code>, <code>он → ему<\/code>.<br>To say you like something, use <b>мне нравится<\/b> (literally \"to me it is pleasing\"): <code>Мне нравится кофе<\/code>.<br>It also names the receiver of an action: <code>Дай мне воду<\/code> (Give me water).","examples":[{"ru":"Мне нравится кофе.","en":"I like coffee.","tl":"mnye nravitsa kofe"},{"ru":"Ей нравится музыка.","en":"She likes music.","tl":"yey nravitsa muzyka"},{"ru":"Дай мне воду.","en":"Give me water.","tl":"day mnye vodu"},{"ru":"Тебе нравится чай?","en":"Do you like tea?","tl":"tyebye nravitsa chay"}]},{"id":"instrumental","unit":"home","title":"The instrumental case (with / by)","body":"The <b>instrumental case<\/b> tells you <b>how<\/b> or <b>with whom<\/b> something is done — \\\"by means of\\\" or \\\"together with\\\". After the word <code>с<\/code> (with) and for tools or transport, change the ending. Masculine and neuter words usually take <code>-ом<\/code> (or <code>-ем<\/code> after a soft sound), and feminine words take <code>-ой<\/code>.<br>So <b>чай<\/b> becomes <b>чаем<\/b>, and <b>машина<\/b> becomes <b>машиной<\/b>.","examples":[{"ru":"чай с молоком","en":"tea with milk","tl":"chai s molokom"},{"ru":"Я еду автобусом.","en":"I go by bus.","tl":"ya yedu avtobusom."},{"ru":"Я пишу ручкой.","en":"I write with a pen.","tl":"ya pishu ruchkoy."},{"ru":"хлеб с маслом","en":"bread with butter","tl":"khleb s maslom"}]},{"id":"plurals","unit":"family","title":"Making plurals","body":"To make a noun plural, most masculine and feminine nouns simply add <b>-ы<\/b> or <b>-и<\/b>.<br>Use <code>-и<\/code> after the letters <b>г, к, х, ж, ш, щ, ч<\/b> and for soft nouns (those ending in <b>-ь<\/b>, <b>-й<\/b> or <b>-я<\/b>); use <code>-ы<\/code> elsewhere. So <code>стол → столы<\/code> and <code>книга → книги<\/code>.<br>A few common nouns are irregular and you just learn them: <code>дом → дома<\/code> and <code>друг → друзья<\/code>.","examples":[{"ru":"стол → столы","en":"table → tables","tl":"stol → stoly"},{"ru":"книга → книги","en":"book → books","tl":"kniga → knigi"},{"ru":"дом → дома","en":"house → houses","tl":"dom → doma"},{"ru":"друг → друзья","en":"friend → friends","tl":"drug → druz'ya"}]},{"id":"aspect","unit":"pastfuture","title":"Verb aspect: ongoing vs done","body":"Most Russian verbs come in pairs. The <b>imperfective<\/b> verb describes a process or a repeated action — something happening, ongoing, or done regularly (for example <code>читать<\/code>, <code>делать<\/code>).<br>The <b>perfective<\/b> verb describes one finished action with a clear result — something completed (for example <code>прочитать<\/code>, <code>сделать<\/code>).<br>So <code>читать<\/code> means \"to read / be reading\", but <code>прочитать<\/code> means \"to read all the way through\". A small prefix often turns \"doing\" into \"done\".","examples":[{"ru":"Я читаю книгу.","en":"I am reading a book. (process, ongoing)","tl":"ya chitayu knigu"},{"ru":"Я прочитал книгу.","en":"I read the whole book. (finished, result)","tl":"ya prochital knigu"},{"ru":"Я делаю уроки.","en":"I am doing my homework. (in progress)","tl":"ya delayu uroki"},{"ru":"Я сделал уроки.","en":"I have done my homework. (finished, result)","tl":"ya sdelal uroki"}]},{"id":"past","unit":"pastfuture","title":"The past tense","body":"To make the past tense, take the verb's infinitive, drop the ending <code>-ть<\/code>, and add a gender ending: <b>-л<\/b> for <b>он<\/b> (he), <b>-ла<\/b> for <b>она<\/b> (she), <b>-ло<\/b> for <b>оно<\/b> (it), and <b>-ли<\/b> for <b>они<\/b> (they/plural).<br>For example, <code>говорить<\/code> (to speak) becomes <b>он говорил<\/b>, <b>она говорила<\/b>, <b>они говорили<\/b>.<br>The ending matches the subject's gender, not whether the speaker is male or female.","examples":[{"ru":"Он говорил.","en":"He spoke / was speaking.","tl":"on govoril"},{"ru":"Она говорила.","en":"She spoke / was speaking.","tl":"ona govorila"},{"ru":"Они говорили.","en":"They spoke / were speaking.","tl":"oni govorili"},{"ru":"Она работала.","en":"She worked.","tl":"ona rabotala"}]},{"id":"negation","unit":"questions","title":"Saying no and not","body":"To make a sentence negative, put <b>не<\/b> directly before the word you want to negate.<br>For \"I don't know,\" say <code>Я не знаю<\/code> — <b>не<\/b> goes right before the verb.<br>In Russian, double negatives are normal and correct: a negative word like <b>никогда<\/b> (never) still keeps <b>не<\/b> before the verb, as in <code>Я никогда не пью кофе<\/code>.","examples":[{"ru":"Я не знаю.","en":"I don't know.","tl":"ya nye znayu"},{"ru":"Я никогда не пью кофе.","en":"I never drink coffee.","tl":"ya nikagda nye p'yu kofye"},{"ru":"Это не мой дом.","en":"This is not my house.","tl":"eta nye moy dom"},{"ru":"Он ничего не говорит.","en":"He doesn't say anything.","tl":"on nichevo nye gavarit"}]}]};
+const LESSON_SIZE = 4;
+
+/* ---------- STATE ---------- */
+const DAY=86400000;
+const DEF={cards:{},progress:{},streak:0,lastDay:null,xp:0,dailyDate:null,dailyXp:0,mistakes:[],
+  settings:{translit:true,sound:true,haptics:true,newPerDay:4,goal:30}};
+let S=load();
+function load(){try{const r=JSON.parse(localStorage.getItem('slovo_v2'));if(r)return deepDef(r);}catch(e){}return clone(DEF);}
+function deepDef(r){const o=clone(DEF);Object.assign(o,r);o.settings=Object.assign({},DEF.settings,r.settings||{});o.cards=r.cards||{};o.progress=r.progress||{};o.mistakes=r.mistakes||[];return o;}
+function clone(x){return JSON.parse(JSON.stringify(x));}
+function save(){localStorage.setItem('slovo_v2',JSON.stringify(S));}
+function todayStr(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+function yestStr(){const d=new Date(Date.now()-DAY);return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+
+/* ---------- BUILD ITEMS + PATH ---------- */
+const byId={}, WORDS=[], LETTERS=[];
+let PATH=[];
+function buildCourse(){
+  byId._w={}; WORDS.length=0; LETTERS.length=0; PATH=[];
+  const seen=new Set();
+  // letters
+  ALPHA.forEach(l=>{const it={kind:'letter',id:'L:'+l.ch,ch:l.ch,low:l.low,s:l.s,ex:l.ex};byId[it.id]=it;LETTERS.push(it);});
+  // words
+  COURSE.units.forEach(u=>{
+    u.words.forEach(w=>{
+      if(seen.has(w.ru))return; seen.add(w.ru);
+      const it={kind:'word',id:'W:'+w.ru,ru:w.ru,en:w.en,tl:w.tl,pos:w.pos,gender:w.gender,note:w.note,unit:u.id};
+      byId[it.id]=it; WORDS.push(it);
+    });
+  });
+  // PATH — alphabet unit
+  const aGroups={};ALPHA.forEach(l=>{(aGroups[l.g]=aGroups[l.g]||[]).push(l);});
+  const aNodes=[];
+  Object.keys(aGroups).forEach((gk,i)=>{
+    aNodes.push({id:'alpha:'+gk,kind:'alpha',title:'Letters '+(i+1),letters:aGroups[gk].map(l=>'L:'+l.ch)});
+  });
+  PATH.push({unit:{id:'alphabet',title:'The Alphabet',icon:'Аа',color:'#7c5cff'},nodes:aNodes});
+  // course units
+  COURSE.units.forEach(u=>{
+    const nodes=[];
+    COURSE.grammar.filter(g=>g.unit===u.id).forEach((g,gi)=>{
+      nodes.push({id:'g:'+g.id,kind:'grammar',title:'Grammar',grammarId:g.id});
+    });
+    const uwords=u.words.filter(w=>byId['W:'+w.ru]&&byId['W:'+w.ru].unit===u.id).map(w=>'W:'+w.ru);
+    for(let i=0;i<uwords.length;i+=LESSON_SIZE){
+      const chunk=uwords.slice(i,i+LESSON_SIZE);
+      nodes.push({id:u.id+':l'+(i/LESSON_SIZE),kind:'lesson',title:'Lesson '+(i/LESSON_SIZE+1),wordIds:chunk,unitId:u.id});
+    }
+    if(uwords.length){nodes.push({id:u.id+':review',kind:'review',title:'Review',unitId:u.id});}
+    PATH.push({unit:u,nodes});
+  });
+  // assign global order index
+  let gi=0;PATH.forEach(sec=>sec.nodes.forEach(n=>{n.order=gi++;n.unitColor=sec.unit.color;n.unitTitle=sec.unit.title;n.unitIcon=sec.unit.icon;n.unitId2=sec.unit.id;}));
+}
+function flatNodes(){const a=[];PATH.forEach(s=>s.nodes.forEach(n=>a.push(n)));return a;}
+function nodeDone(id){return S.progress[id]&&S.progress[id].done;}
+function currentNode(){const all=flatNodes();for(const n of all){if(!nodeDone(n.id))return n;}return null;}
+function nodeUnlocked(n){const all=flatNodes();const idx=all.findIndex(x=>x.id===n.id);if(idx<=0)return true;return nodeDone(all[idx-1].id);}
+
+/* ---------- AUDIO ---------- */
+let ruVoice=null,hasVoice=false;
+function loadVoices(){const vs=window.speechSynthesis?speechSynthesis.getVoices():[];ruVoice=vs.find(v=>(v.lang||'').toLowerCase().startsWith('ru'))||null;hasVoice=!!ruVoice;
+  const el=document.getElementById('voiceState');if(el)el.textContent=hasVoice?('Russian voice ready'):(vs.length?'No Russian voice — using default':'Speech not available');}
+if('speechSynthesis' in window){speechSynthesis.onvoiceschanged=loadVoices;loadVoices();setTimeout(loadVoices,500);}
+function speak(t){if(!('speechSynthesis' in window))return;const u=new SpeechSynthesisUtterance(String(t).replace(/[’'"]/g,''));u.lang='ru-RU';if(ruVoice)u.voice=ruVoice;u.rate=.82;speechSynthesis.cancel();speechSynthesis.speak(u);}
+
+/* ---------- SOUND FX + HAPTICS ---------- */
+let actx=null;
+function ac(){if(!actx){try{actx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}return actx;}
+function tone(freq,start,dur,type,vol){const c=ac();if(!c)return;const o=c.createOscillator(),g=c.createGain();o.type=type||'sine';o.frequency.value=freq;
+  g.gain.setValueAtTime(0,c.currentTime+start);g.gain.linearRampToValueAtTime(vol||.18,c.currentTime+start+.01);g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+start+dur);
+  o.connect(g);g.connect(c.destination);o.start(c.currentTime+start);o.stop(c.currentTime+start+dur+.02);}
+function sfx(kind){if(!S.settings.sound)return;
+  if(kind==='ok'){tone(660,0,.1);tone(990,.08,.14);}
+  else if(kind==='no'){tone(180,0,.18,'sawtooth',.14);}
+  else if(kind==='done'){[523,659,784,1047].forEach((f,i)=>tone(f,i*.1,.2));}}
+function haptic(ms){if(S.settings.haptics&&navigator.vibrate)navigator.vibrate(ms);}
+
+/* ---------- SRS ---------- */
+function grade(id,ok){let c=S.cards[id];if(!c){c=S.cards[id]={ease:2.3,interval:0,reps:0,lapses:0,learned:false,due:Date.now()};}
+  const now=Date.now();
+  if(ok){c.reps++;if(!c.learned){c.learned=true;c.interval=1;}else{c.interval=Math.max(1,Math.round(c.interval*c.ease));c.ease=Math.min(2.8,c.ease+0.04);}c.due=now+c.interval*DAY;
+    const mi=S.mistakes.indexOf(id);if(mi>=0&&c.reps>1)S.mistakes.splice(mi,1);}
+  else{c.lapses++;c.ease=Math.max(1.3,c.ease-0.2);c.interval=0;c.due=now;if(!S.mistakes.includes(id))S.mistakes.push(id);}
+}
+function seenCard(id){if(!S.cards[id])S.cards[id]={ease:2.3,interval:0,reps:0,lapses:0,learned:false,due:Date.now()};}
+function dueReviews(now){return WORDS.concat(LETTERS).filter(it=>{const c=S.cards[it.id];return c&&c.learned&&c.due<=now;});}
+
+/* ---------- helpers ---------- */
+let _seed=(Date.parse(new Date().toISOString())||1)>>>0;
+function rnd(){_seed=(_seed*1664525+1013904223)>>>0;return _seed/4294967296;}
+function shuf(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function pick(a){return a[Math.floor(rnd()*a.length)];}
+function norm(s){return String(s||'').toLowerCase().replace(/ё/g,'е').replace(/[.,!?;:—«»"'’]/g,'').replace(/\s+/g,' ').trim();}
+function tokens(ru){return String(ru).replace(/[.,!?;:—«»"'’]/g,'').split(/\s+/).filter(Boolean);}
+const FUNC=new Set(['я','ты','это','не','и','а','в','на','у','с','о','к','от','за','по','мой','моя','моё','мои','вы','мы','он','она','оно','они','да','нет','как','что','есть','тут','там','здесь','очень','то','же','бы','ли']);
+function knownWordSet(){const s=new Set(FUNC);WORDS.forEach(w=>{if(S.cards[w.id])s.add(norm(w.ru));});return s;}
+function sentEligible(sent,set){return tokens(sent.ru).every(t=>set.has(norm(t)));}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function tlHtml(t){return S.settings.translit&&t?`<div class="translit">${esc(t)}</div>`:'';}
+
+/* ---------- NAV ---------- */
+function go(name){
+  ['home','session','done','alpha','settings'].forEach(s=>document.getElementById('screen-'+s).classList.toggle('hidden',s!==name));
+  document.getElementById('nav').classList.toggle('hidden',name==='session'||name==='done');
+  document.getElementById('topbar').classList.toggle('hidden',name==='session');
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.s===name));
+  if(name==='home')renderHome();
+  window.scrollTo(0,0);
+}
+
+/* ---------- HOME ---------- */
+function renderHome(){
+  document.getElementById('streakN').textContent=S.streak;
+  document.getElementById('xpN').textContent=S.xp;
+  if(S.dailyDate!==todayStr()){S.dailyDate=todayStr();S.dailyXp=0;save();}
+  const h=new Date().getHours();
+  document.getElementById('heroTitle').textContent=h<5?'Доброй ночи 🌙':h<12?'Доброе утро 👋':h<18?'Добрый день ☀️':'Добрый вечер 🌆';
+  const goalPct=Math.min(100,Math.round(S.dailyXp/S.settings.goal*100));
+  setRing(goalPct);
+  const cur=currentNode();
+  const revN=dueReviews(Date.now()).length;
+  document.getElementById('heroSub').textContent = goalPct>=100
+    ? 'Daily goal smashed 🎉 Keep going if you like.'
+    : (cur? 'Next up: '+cur.unitTitle+' · '+cur.title : 'You’ve finished the whole course! 🏆');
+  const cb=document.getElementById('continueBtn');
+  if(cur){cb.textContent=(nodeDone_any()?'Continue learning':'Start learning');cb.classList.remove('done');cb.onclick=()=>startNode(cur);}
+  else{cb.textContent='✓ Course complete';cb.classList.add('done');cb.onclick=()=>{};}
+  const rb=document.getElementById('reviewBtn');
+  if(revN>0){rb.classList.remove('hidden');document.getElementById('revCount').textContent=revN;rb.onclick=()=>startReview();}
+  else rb.classList.add('hidden');
+  renderPath();
+}
+function nodeDone_any(){return Object.keys(S.progress).some(k=>S.progress[k].done);}
+function setRing(pct){const c=220,off=c-(c*pct/100);document.getElementById('ring').style.strokeDashoffset=off;document.getElementById('ringPct').textContent=pct+'%';}
+
+function renderPath(){
+  const host=document.getElementById('pathHost');host.innerHTML='';
+  const offsets=[0,52,78,52,0,-52,-78,-52];
+  const cur=currentNode();
+  PATH.forEach(sec=>{
+    const done=sec.nodes.filter(n=>nodeDone(n.id)).length;
+    const head=document.createElement('div');head.className='uhead';head.style.background='linear-gradient(135deg,'+sec.unit.color+','+shade(sec.unit.color,-25)+')';
+    head.innerHTML=`<span class="uic">${sec.unit.icon}</span><div><h3>${esc(sec.unit.title)}</h3><p>${sec.nodes.length} lessons</p></div><span class="ucount">${done}/${sec.nodes.length}</span>`;
+    host.appendChild(head);
+    sec.nodes.forEach((n,i)=>{
+      const row=document.createElement('div');row.className='noderow';
+      const off=offsets[n.order%offsets.length];
+      const isDone=nodeDone(n.id), isCur=cur&&cur.id===n.id, locked=!nodeUnlocked(n);
+      const btn=document.createElement('button');
+      btn.className='node'+(isDone?' done':'')+(isCur?' current':'')+(locked?' locked':'')+(n.kind==='grammar'?' gram':'');
+      btn.style.transform='translateX('+off+'px)';
+      const ic=n.kind==='grammar'?'📘':n.kind==='review'?'🏆':isDone?'★':(n.kind==='alpha'?'Аа':'●');
+      btn.innerHTML=`<span class="ic" style="font-size:${n.kind==='alpha'?'20px':''}">${ic}</span>`
+        +(isCur?'<span class="startflag">START</span>':'')
+        +(isDone&&S.progress[n.id].stars?`<span class="stars">${'⭐'.repeat(S.progress[n.id].stars)}</span>`:'');
+      btn.onclick=()=>{if(locked){toastLocked();return;}startNode(n);};
+      const wrap=document.createElement('div');wrap.style.display='flex';wrap.style.flexDirection='column';wrap.style.alignItems='center';wrap.style.transform='translateX('+off+'px)';
+      btn.style.transform='';
+      wrap.appendChild(btn);
+      const lab=document.createElement('div');lab.className='nodelabel';lab.textContent=n.title;wrap.appendChild(lab);
+      row.appendChild(wrap);
+      host.appendChild(row);
+    });
+  });
+}
+function toastLocked(){const c=document.getElementById('combo');c.textContent='🔒 Finish the lesson before this one';c.classList.add('show');setTimeout(()=>c.classList.remove('show'),1400);}
+function shade(hex,p){const n=parseInt(hex.slice(1),16);let r=(n>>16)+p,g=((n>>8)&255)+p,b=(n&255)+p;r=Math.max(0,Math.min(255,r));g=Math.max(0,Math.min(255,g));b=Math.max(0,Math.min(255,b));return'#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);}
+
+/* ---------- SESSION ENGINE ---------- */
+let sess=null;
+function startNode(node){ac();// resume audio on gesture
+  let queue=[];
+  if(node.kind==='alpha'){
+    node.letters.forEach(id=>queue.push({id,mode:byId[id]&&S.cards[id]&&S.cards[id].learned?'recall':'learn'}));
+    queue=shuf(queue);
+  } else if(node.kind==='grammar'){
+    queue.push({mode:'grammar',grammarId:node.grammarId});
+    const g=COURSE.grammar.find(x=>x.id===node.grammarId);
+    if(g&&g.examples&&g.examples.length){queue.push({mode:'wordbank',sentence:pick(g.examples),dir:'en_ru'});}
+  } else if(node.kind==='lesson'){
+    // teach the new words first, then practise — never quiz a word before it's introduced
+    const learns=[];node.wordIds.forEach(id=>learns.push({id,mode:S.cards[id]&&S.cards[id].learned?'recall':'learn'}));
+    const practice=[];
+    const u=COURSE.units.find(x=>x.id===node.unitId);
+    if(u){const set=knownWordSet();node.wordIds.forEach(id=>set.add(norm(byId[id].ru)));
+      const el=u.sentences.filter(s=>sentEligible(s,set));
+      if(el.length)practice.push({mode:'wordbank',sentence:pick(el),dir:'en_ru'});}
+    if(node.wordIds.length>=3)practice.push({mode:'match',ids:node.wordIds.slice(0,Math.min(5,node.wordIds.length))});
+    queue=shuf(learns).concat(shuf(practice));
+  } else if(node.kind==='review'){
+    const u=COURSE.units.find(x=>x.id===node.unitId);
+    const ids=u.words.map(w=>'W:'+w.ru).filter(id=>byId[id]);
+    shuf(ids).slice(0,8).forEach(id=>queue.push({id,mode:'recall'}));
+    const set=knownWordSet();const el=u.sentences.filter(s=>sentEligible(s,set));
+    if(el.length){shuf(el).slice(0,2).forEach(s=>queue.push({mode:'wordbank',sentence:s,dir:'en_ru'}));queue.push({mode:'cloze',sentence:pick(el),unitId:u.id});}
+    queue=shuf(queue);
+  }
+  if(!queue.length)return;
+  sess={node,queue,i:0,correct:0,answered:0,hearts:3,kind:'node'};
+  go('session');nextTask();
+}
+function startReview(){ac();
+  const due=dueReviews(Date.now());let ids=shuf(due.map(d=>d.id)).slice(0,16);
+  // include mistakes first
+  S.mistakes.slice(0,6).forEach(id=>{if(byId[id]&&!ids.includes(id))ids.unshift(id);});
+  const queue=ids.map(id=>({id,mode:'recall'}));
+  if(!queue.length){return;}
+  sess={node:null,queue,i:0,correct:0,answered:0,hearts:3,kind:'review'};
+  go('session');nextTask();
+}
+
+function updateProg(){const total=sess.i+ (sess.queue.length-sess.i);const pct=sess.queue.length?Math.round(sess.i/sess.queue.length*100):0;
+  document.getElementById('sprogBar').style.width=Math.min(100,pct)+'%';
+  document.getElementById('shearts').textContent='♥'.repeat(Math.max(0,sess.hearts))+'♡'.repeat(Math.max(0,3-sess.hearts));}
+function insertSoon(task){const rem=sess.queue.length-sess.i;const pos=sess.i+2+Math.floor(rnd()*Math.max(1,Math.min(5,rem)));sess.queue.splice(Math.min(pos,sess.queue.length),0,task);}
+function nextTask(){hideFb();if(!sess)return;if(sess.i>=sess.queue.length){return endSession();}updateProg();
+  const t=sess.queue[sess.i];
+  if(t.mode==='grammar')return renderGrammar(t);
+  if(t.mode==='match')return renderMatch(t);
+  if(t.mode==='wordbank')return renderWordbank(t);
+  if(t.mode==='cloze')return renderCloze(t);
+  if(t.mode==='sentence_check')return renderSentenceCheck(t);
+  const it=byId[t.id];if(!it){sess.i++;return nextTask();}
+  if(t.mode==='learn')return renderLearn(it);
+  return renderRecall(it);
+}
+function advance(){sess.i++;nextTask();}
+
+/* ---- LEARN ---- */
+function renderLearn(it){const host=document.getElementById('cardHost');
+  if(it.kind==='letter'){
+    host.innerHTML=`<div class="card fadein"><div class="qtag new">New letter</div>
+      <div class="bigru" style="font-size:54px">${it.ch} ${it.low}<button class="spk" onclick="speak('${it.ex[0]}')">🔊</button></div>
+      <div class="translit">sounds like “${it.s}”</div>
+      <div class="ex"><div class="exru">${esc(it.ex[0])} <button class="spk sm" onclick="speak('${it.ex[0]}')">🔊</button></div><div class="exen">${esc(it.ex[1])}</div></div>
+      <button class="actbtn" onclick="finishLearn('${it.id}')">Got it →</button></div>`;
+    speak(it.ex[0]);
+  } else {
+    host.innerHTML=`<div class="card fadein"><div class="qtag new">New word</div>
+      <div class="bigru">${esc(it.ru)}<button class="spk" onclick="speak('${esc(it.ru)}')">🔊</button></div>
+      ${tlHtml(it.tl)}<div class="meaning">${esc(it.en)}</div>${it.pos?`<div class="pos">${esc(it.pos)}${it.note?' · '+esc(it.note):''}</div>`:''}
+      ${unitSentenceFor(it)}
+      <button class="actbtn" onclick="finishLearn('${it.id}')">Got it →</button></div>`;
+    speak(it.ru);
+  }
+}
+function unitSentenceFor(it){const u=COURSE.units.find(x=>x.id===it.unit);if(!u)return'';
+  const s=u.sentences.find(s=>tokens(s.ru).map(norm).includes(norm(it.ru)));if(!s)return'';
+  return`<div class="ex"><div class="exru">${esc(s.ru)} <button class="spk sm" onclick="speak('${esc(s.ru)}')">🔊</button></div><div class="exen">${esc(s.en)}</div>${S.settings.translit?`<div class="extl">${esc(s.tl)}</div>`:''}</div>`;}
+function finishLearn(id){seenCard(id);insertSoon({id,mode:'recall'});save();advance();}
+
+/* ---- GRAMMAR ---- */
+function renderGrammar(t){const g=COURSE.grammar.find(x=>x.id===t.grammarId);const host=document.getElementById('cardHost');
+  const ex=(g.examples||[]).map(e=>`<div class="ex"><div class="exru">${esc(e.ru)} <button class="spk sm" onclick="speak('${esc(e.ru)}')">🔊</button></div><div class="exen">${esc(e.en)}</div>${S.settings.translit&&e.tl?`<div class="extl">${esc(e.tl)}</div>`:''}</div>`).join('');
+  host.innerHTML=`<div class="card fadein"><div class="qtag gram">Grammar</div><div class="meaning" style="margin-top:0">${esc(g.title)}</div>
+    <p class="gbody" style="margin-top:9px">${g.body}</p>${ex}<button class="actbtn" onclick="advance()">Got it →</button></div>`;
+}
+
+/* ---- RECALL (word/letter test) ---- */
+function renderRecall(it){if(it.kind==='letter')return renderLetterRecall(it);
+  const c=S.cards[it.id]||{reps:0};const reps=c.reps||0;
+  let pool=reps<2?['mc_ru_en','listen','mc_en_ru']:['type','mc_en_ru','listen','type'];
+  const mode=pick(pool);
+  if(mode==='type')return renderType(it);
+  if(mode==='listen')return renderListen(it);
+  if(mode==='mc_en_ru')return renderMC(it,'en_ru');
+  return renderMC(it,'ru_en');
+}
+function distract(it,field,n){const others=shuf(WORDS.filter(x=>x.id!==it.id));const out=[];for(const o of others){if(!out.includes(o[field])&&o[field]!==it[field]){out.push(o[field]);if(out.length>=n)break;}}return out;}
+function renderMC(it,dir){const host=document.getElementById('cardHost');const ruEn=dir==='ru_en';
+  const correct=ruEn?it.en:it.ru;let opts=[correct,...distract(it,ruEn?'en':'ru',3)];opts=Array.from(new Set(opts));while(opts.length<4){const x=pick(WORDS)[ruEn?'en':'ru'];if(!opts.includes(x))opts.push(x);}opts=shuf(opts);
+  host.innerHTML=`<div class="card fadein"><div class="qtag rev">${ruEn?'What does this mean?':'Pick the Russian'}</div>
+    ${ruEn?`<div class="bigru">${esc(it.ru)}<button class="spk" onclick="speak('${esc(it.ru)}')">🔊</button></div>${tlHtml(it.tl)}`:`<div class="meaning" style="margin-top:0;font-size:28px">${esc(it.en)}</div>`}
+    <div class="opts" id="opts">${opts.map(o=>`<button class="opt" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div></div>`;
+  bindOpts(correct,()=>{if(!ruEn)speak(it.ru);},it,ruEn?(it.ru+' — '+it.en):(it.ru+' — '+it.en));
+}
+function bindOpts(correct,onPick,it,answerText){
+  document.querySelectorAll('#opts .opt').forEach(b=>{b.onclick=()=>{const ok=b.dataset.v===correct;
+    document.querySelectorAll('#opts .opt').forEach(x=>{x.style.pointerEvents='none';if(x.dataset.v===correct)x.classList.add('correct');else if(x===b)x.classList.add('wrong');else x.classList.add('dim');});
+    if(onPick)onPick();judge(it,ok,answerText);};});
+}
+function renderListen(it){const host=document.getElementById('cardHost');const correct=it.en;
+  let opts=[correct,...distract(it,'en',3)];opts=Array.from(new Set(opts));while(opts.length<4){const x=pick(WORDS).en;if(!opts.includes(x))opts.push(x);}opts=shuf(opts);
+  host.innerHTML=`<div class="card fadein"><div class="qtag rev">Listen — what did you hear?</div>
+    <button class="spk" style="width:84px;height:84px;font-size:36px;margin:4px auto 14px;display:flex" onclick="speak('${esc(it.ru)}')">🔊</button>
+    <div class="opts" id="opts">${opts.map(o=>`<button class="opt" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div></div>`;
+  setTimeout(()=>speak(it.ru),250);bindOpts(correct,null,it,it.ru+' — '+it.en);
+}
+let typeTarget=null;
+function renderType(it){const host=document.getElementById('cardHost');typeTarget=it;
+  host.innerHTML=`<div class="card fadein"><div class="qtag rev">Type it in Russian</div>
+    <div class="meaning" style="margin-top:0;font-size:25px">${esc(it.en)}</div>${it.pos?`<div class="pos">${esc(it.pos)}</div>`:''}
+    <input class="inp" id="tin" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="…">
+    <div class="kbd" id="kbd"></div><button class="actbtn" id="checkBtn" onclick="checkType()">Check</button></div>`;
+  buildKbd();document.getElementById('tin').addEventListener('keydown',e=>{if(e.key==='Enter')checkType();});}
+const CYR='йцукенгшщзхфывапролджэячсмитьбюё'.split('');
+function buildKbd(){document.getElementById('kbd').innerHTML=CYR.map(c=>`<button class="key" onclick="kp('${c}')">${c}</button>`).join('')+`<button class="key wide" onclick="ksp()">␣</button><button class="key wide" onclick="kbk()">⌫</button>`;}
+function kp(c){const t=document.getElementById('tin');t.value+=c;}
+function ksp(){document.getElementById('tin').value+=' ';}
+function kbk(){const t=document.getElementById('tin');t.value=t.value.slice(0,-1);}
+function checkType(){const it=typeTarget,tin=document.getElementById('tin');const ok=norm(tin.value)===norm(it.ru);tin.classList.add(ok?'correct':'wrong');tin.disabled=true;document.getElementById('checkBtn').style.display='none';speak(it.ru);judge(it,ok,it.ru);}
+
+function renderLetterRecall(it){const host=document.getElementById('cardHost');
+  let pool=shuf(LETTERS.filter(x=>x.id!==it.id).map(x=>x.s));let opts=[it.s];for(const s of pool){if(!opts.includes(s)){opts.push(s);if(opts.length>=4)break;}}opts=shuf(opts);
+  host.innerHTML=`<div class="card fadein"><div class="qtag rev">Which sound?</div>
+    <div class="bigru" style="font-size:62px;justify-content:center">${it.ch} ${it.low}<button class="spk" onclick="speak('${it.ex[0]}')">🔊</button></div>
+    <div class="opts" id="opts" style="margin-top:16px">${opts.map(o=>`<button class="opt" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div></div>`;
+  bindOpts(it.s,()=>speak(it.ex[0]),it,it.ch+' = “'+it.s+'” (e.g. '+it.ex[0]+')');
+}
+
+/* ---- WORD-BANK (sentence construction) ---- */
+let wb=null;
+function renderWordbank(t){const host=document.getElementById('cardHost');const s=t.sentence;const enRu=t.dir!=='ru_en';
+  const target=enRu?tokens(s.ru):tokens(s.en);
+  const prompt=enRu?s.en:s.ru;
+  let bankTokens=target.slice();
+  if(enRu){const ds=shuf(WORDS).map(w=>w.ru).filter(x=>!target.map(norm).includes(norm(x))).slice(0,3);bankTokens=shuf(target.concat(ds));}
+  else bankTokens=shuf(target.concat([]));
+  wb={target,picked:[],enRu};
+  host.innerHTML=`<div class="card fadein"><div class="qtag build">Build the ${enRu?'Russian':'English'}</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><div class="meaning" style="margin:0;font-size:20px">${esc(prompt)}</div>${enRu?'':`<button class="spk sm" onclick="speak('${esc(s.ru)}')">🔊</button>`}</div>
+    <div class="answerline" id="answer"></div>
+    <div class="bank" id="bank">${bankTokens.map((w,i)=>`<button class="tile" data-i="${i}" data-w="${esc(w)}" onclick="wbPick(this)">${esc(w)}</button>`).join('')}</div>
+    <button class="actbtn" id="wbCheck" onclick="wbCheckFn()" disabled>Check</button>
+    <button class="actbtn skip" onclick="judgeSentence(${'true'},'${esc(s.ru)} — ${esc(s.en)}',true)">Skip</button></div>`;
+  if(enRu)setTimeout(()=>speak(s.ru),200);
+}
+function wbPick(el){const ans=document.getElementById('answer');const t=document.createElement('button');t.className='tile';t.textContent=el.textContent;t.dataset.src=el.dataset.i;
+  t.onclick=()=>{el.classList.remove('used');t.remove();wbState();};el.classList.add('used');ans.appendChild(t);wbState();}
+function wbState(){const ans=document.getElementById('answer');wb.picked=[...ans.children].map(c=>c.textContent);document.getElementById('wbCheck').disabled=wb.picked.length===0;}
+function wbCheckFn(){const got=norm(wb.picked.join(' '));const want=norm(wb.target.join(' '));const ok=got===want;
+  const ans=document.getElementById('answer');ans.classList.add(ok?'correct':'wrong');
+  if(wb.enRu)speak(wb.target.join(' '));
+  judgeSentence(ok,wb.target.join(' '));}
+function judgeSentence(ok,answerText,skipped){sess.answered++;if(ok&&!skipped){sess.correct++;addXp(3);sfx('ok');haptic(15);}else if(!ok){sess.hearts=Math.max(0,sess.hearts-1);sfx('no');haptic([10,40,10]);}
+  showFb(ok,ok?'':('Answer: <span class="ans">'+esc(answerText)+'</span>'),true);}
+
+/* ---- MATCH PAIRS ---- */
+let match=null;
+function renderMatch(t){const host=document.getElementById('cardHost');const items=t.ids.map(id=>byId[id]).filter(Boolean);
+  const left=shuf(items.map(it=>({id:it.id,txt:it.ru,ru:true})));const right=shuf(items.map(it=>({id:it.id,txt:it.en,ru:false})));
+  match={remaining:items.length,sel:null,done:0};
+  const cell=(c)=>`<button class="mtile" data-id="${c.id}" data-ru="${c.ru}" onclick="mTap(this)">${esc(c.txt)}</button>`;
+  let rows='';for(let i=0;i<items.length;i++){rows+=cell(left[i])+cell(right[i]);}
+  host.innerHTML=`<div class="card fadein"><div class="qtag rev">Match the pairs</div><div class="matchgrid" id="mgrid">${rows}</div></div>`;
+}
+function mTap(el){if(el.classList.contains('gone'))return;
+  if(!match.sel){match.sel=el;el.classList.add('sel');if(el.dataset.ru==='true')speak(byId[el.dataset.id].ru);return;}
+  if(match.sel===el){el.classList.remove('sel');match.sel=null;return;}
+  if(match.sel.dataset.id===el.dataset.id&&match.sel.dataset.ru!==el.dataset.ru){
+    const a=match.sel,b=el;a.classList.add('gone');b.classList.add('gone');a.classList.remove('sel');match.sel=null;match.done++;
+    grade(el.dataset.id,true);sfx('ok');haptic(10);save();
+    if(match.done>=match.remaining){addXp(3);setTimeout(()=>{showFb(true,'',true);},300);}
+  } else {
+    const a=match.sel,b=el;b.classList.add('bad');grade(el.dataset.id,false);sfx('no');haptic(30);
+    setTimeout(()=>{b.classList.remove('bad');a.classList.remove('sel');},350);match.sel=null;save();
+  }
+}
+
+/* ---- CLOZE (fill the blank) ---- */
+function renderCloze(t){const host=document.getElementById('cardHost');const s=t.sentence;const toks=tokens(s.ru);
+  // pick a blankable token that is a known vocab word
+  let bi=-1;for(let i=0;i<toks.length;i++){if(byId['W:'+toks[i].toLowerCase()]||WORDS.find(w=>norm(w.ru)===norm(toks[i]))){bi=i;}}
+  if(bi<0)bi=toks.length-1;const answer=toks[bi];
+  const wordObj=WORDS.find(w=>norm(w.ru)===norm(answer));
+  let opts=[answer,...shuf(WORDS).map(w=>w.ru).filter(x=>norm(x)!==norm(answer)).slice(0,3)];opts=shuf(Array.from(new Set(opts)).slice(0,4));
+  const shown=toks.map((w,i)=>i===bi?'<span class="blank" id="blank">____</span>':esc(w)).join(' ');
+  host.innerHTML=`<div class="card fadein"><div class="qtag build">Fill in the blank</div>
+    <div class="clozesent">${shown}</div><div class="exen" style="color:var(--dim);font-size:14px;margin:-8px 0 12px">${esc(s.en)}</div>
+    <div class="opts" id="opts">${opts.map(o=>`<button class="opt" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div></div>`;
+  document.querySelectorAll('#opts .opt').forEach(b=>{b.onclick=()=>{const ok=norm(b.dataset.v)===norm(answer);
+    document.querySelectorAll('#opts .opt').forEach(x=>{x.style.pointerEvents='none';if(norm(x.dataset.v)===norm(answer))x.classList.add('correct');else if(x===b)x.classList.add('wrong');else x.classList.add('dim');});
+    const bl=document.getElementById('blank');if(bl)bl.textContent=answer;speak(s.ru);
+    if(wordObj)judge(wordObj,ok,s.ru+' — '+s.en);else judgeSentence(ok,s.ru+' — '+s.en);};});
+}
+
+/* ---- SENTENCE CHECK (grammar follow-up) ---- */
+function renderSentenceCheck(t){renderWordbank(t);}
+
+/* ---- judge + feedback ---- */
+function judge(it,ok,answerText){grade(it.id,ok);sess.answered++;
+  if(ok){sess.correct++;addXp(2);sfx('ok');haptic(15);bumpCombo();}
+  else{sess.hearts=Math.max(0,sess.hearts-1);insertSoon({id:it.id,mode:'recall'});sfx('no');haptic([10,40,10]);sess.combo=0;}
+  save();showFb(ok,ok?'':('Answer: <span class="ans">'+esc(answerText)+'</span>'));}
+function addXp(n){S.xp+=n;S.dailyXp+=n;}
+let comboN=0;function bumpCombo(){sess.combo=(sess.combo||0)+1;if(sess.combo>=3){const c=document.getElementById('combo');c.textContent='🔥 '+sess.combo+' in a row!';c.classList.add('show');setTimeout(()=>c.classList.remove('show'),900);}}
+function showFb(ok,bodyHtml,sentence){const fb=document.getElementById('fb');fb.className='fb show '+(ok?'ok':'no');
+  document.getElementById('fbi').textContent=ok?'✅':'❌';
+  document.getElementById('fbTitle').textContent=ok?pick(['Correct!','Nice!','Да!','Отлично!','Молодец!']):'Not quite';
+  document.getElementById('fbBody').innerHTML=bodyHtml||'';
+  document.getElementById('fbBtn').textContent='Continue';document.getElementById('fbBtn').onclick=()=>advance();}
+function hideFb(){document.getElementById('fb').className='fb';}
+
+/* ---- end ---- */
+function endSession(){let stars=3;const acc=sess.answered?sess.correct/sess.answered:1;
+  // streak
+  const t=todayStr();if(S.lastDay!==t){if(S.lastDay===yestStr())S.streak++;else S.streak=1;S.lastDay=t;}
+  if(sess.kind==='node'&&sess.node){stars=acc>=0.9?3:acc>=0.6?2:1;
+    const prev=S.progress[sess.node.id]||{};S.progress[sess.node.id]={done:true,stars:Math.max(stars,prev.stars||0)};}
+  save();
+  document.getElementById('dXp').textContent='+'+(sess.correct*2+ (sess.kind==='node'?5:0));
+  document.getElementById('dAcc').textContent=Math.round(acc*100)+'%';
+  document.getElementById('dStreak').textContent=S.streak;
+  if(sess.kind==='node'){S.xp+=5;S.dailyXp+=5;save();}
+  const goalMet=S.dailyXp>=S.settings.goal;
+  document.getElementById('doneTitle').textContent=sess.kind==='review'?'Review done! 🔁':pick(['Lesson complete!','Молодец! 🎉','Nailed it!']);
+  document.getElementById('doneSub').textContent=goalMet?('Daily goal reached · '+S.streak+'-day streak 🔥'):('Great work · '+S.streak+'-day streak');
+  document.getElementById('doneEmoji').textContent=acc>=0.9?'🏆':acc>=0.6?'🎉':'💪';
+  document.getElementById('doneContinue').onclick=()=>go('home');
+  sess=null;go('done');confetti();
+}
+
+/* ---- confetti ---- */
+function confetti(){const cv=document.getElementById('confetti');cv.classList.remove('hidden');const ctx=cv.getContext('2d');cv.width=innerWidth;cv.height=innerHeight;
+  const cols=['#ff5a4d','#ffb02e','#33c98a','#5b8cff','#a55cff','#ffce54'];const P=[];
+  for(let i=0;i<120;i++)P.push({x:innerWidth/2,y:innerHeight/3,vx:(rnd()-.5)*12,vy:(rnd()-1)*12-2,c:pick(cols),r:4+rnd()*5,a:1,rot:rnd()*6});
+  let frames=0;(function loop(){ctx.clearRect(0,0,cv.width,cv.height);frames++;let alive=false;
+    P.forEach(p=>{p.vy+=.35;p.x+=p.vx;p.y+=p.vy;p.a-=.012;p.rot+=.2;if(p.a>0){alive=true;ctx.globalAlpha=Math.max(0,p.a);ctx.fillStyle=p.c;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.fillRect(-p.r,-p.r,p.r*2,p.r*1.4);ctx.restore();}});
+    if(alive&&frames<160)requestAnimationFrame(loop);else cv.classList.add('hidden');})();}
+
+/* ---- quit ---- */
+document.getElementById('quitBtn').onclick=()=>{if(sess&&sess.answered>0){if(confirm('Leave now? Your progress on finished items is saved, but this lesson won’t be marked complete.')){sess=null;go('home');}}else{sess=null;go('home');}};
+
+/* ---------- ALPHABET screen ---------- */
+function renderAlpha(){document.getElementById('alphaGrid').innerHTML=ALPHA.map(l=>`<button class="lcard" onclick="speak('${l.ex[0]}')"><div class="lc">${l.ch}${l.low}</div><div class="ls">${l.s}</div><div class="lex">${l.ex[0]}</div></button>`).join('');}
+
+/* ---------- SETTINGS ---------- */
+function syncSettings(){['translit','sound','haptics'].forEach(k=>document.getElementById('tg'+k[0].toUpperCase()+k.slice(1)).classList.toggle('on',S.settings[k]));
+  document.getElementById('newPerDay').textContent=S.settings.newPerDay;document.getElementById('goalN').textContent=S.settings.goal;document.getElementById('goalLbl').textContent=S.settings.goal+' XP';}
+function toggle(k){S.settings[k]=!S.settings[k];save();syncSettings();}
+function bumpNew(d){S.settings.newPerDay=Math.max(2,Math.min(8,S.settings.newPerDay+d));save();syncSettings();}
+function bumpGoal(d){S.settings.goal=Math.max(10,Math.min(100,S.settings.goal+d*10));save();syncSettings();}
+function resetAll(){if(confirm('Erase all progress, streak and XP? This cannot be undone.')){localStorage.removeItem('slovo_v2');S=clone(DEF);save();syncSettings();go('home');}}
+
+/* ---------- boot ---------- */
+buildCourse();renderAlpha();syncSettings();go('home');
+window.addEventListener('resize',()=>{const cv=document.getElementById('confetti');if(!cv.classList.contains('hidden')){cv.width=innerWidth;cv.height=innerHeight;}});
+</script>
+</body>
+</html>
