@@ -251,56 +251,82 @@ function rrect(dc, x, y, w, h, r, hex, alpha) {
   dc.addPath(p);
   dc.fillPath();
 }
-// pick the rows/cols arrangement with the largest possible cell pitch
-function fitGrid(total, boxW, boxH, maxRows) {
-  let best = null;
-  for (let rows = 1; rows <= maxRows; rows++) {
-    const cols = Math.ceil(total / rows);
-    const p = Math.min(boxW / cols, boxH / rows);
-    if (!best || p > best.p) best = { rows, cols, p };
+// Dot grids are snapped to WHOLE DEVICE PIXELS. At the sizes a widget allows,
+// a fractional pitch makes some dots 4px and their neighbours 5px, which reads
+// as noise - that is a big part of why the old grid looked like static. Here the
+// pitch is an integer pixel count, so every dot is identical: (p-1)px of ink and
+// a 1px gutter.
+function fitGridPx(total, boxW, boxH, S) {
+  const wpx = Math.floor(boxW * S), hpx = Math.floor(boxH * S);
+  for (let p = 30; p >= 3; p--) {
+    const maxCols = Math.floor(wpx / p), maxRows = Math.floor(hpx / p);
+    if (maxCols < 1 || maxRows < 1 || maxCols * maxRows < total) continue;
+    // Several column counts fit at this pitch. Pick the one that leaves the
+    // fewest blank slots in the last row, so the block reads as a rectangle
+    // instead of trailing off in a ragged step.
+    // ...but never give up more than 5% of the width to do it, or the grid
+    // stops filling its box (1020 months divides evenly by 51 columns, which
+    // would leave a fifth of the small widget empty).
+    let cols = maxCols, waste = Infinity;
+    const minCols = Math.ceil(maxCols * 0.95);
+    for (let c = Math.max(minCols, Math.ceil(total / maxRows)); c <= maxCols; c++) {
+      const rows = Math.ceil(total / c);
+      if (rows > maxRows) continue;
+      const blanks = rows * c - total;
+      if (blanks < waste) { waste = blanks; cols = c; }
+    }
+    return { p, cols, rows: Math.ceil(total / cols) };
   }
-  return best;
+  return null;
 }
-// MIN_PITCH is the whole point of this rewrite: never draw a dot so small that
-// it turns to mush. If weeks won't fit crisply we step up to months, then years.
-const MIN_PITCH = 3.2;
-function chooseGrid(boxW, boxH) {
-  const order = CONFIG.dotUnit === "auto"
-    ? ["weeks", "months", "years"]
-    : [CONFIG.dotUnit, "years"];
-  for (let i = 0; i < order.length; i++) {
-    const u = UNITS[order[i]];
-    if (!u) continue;
-    const f = fitGrid(u.total, boxW, boxH, 90);
-    if (f.p >= MIN_PITCH || i === order.length - 1) return { unit: u, fit: f };
+// Below 4px of pitch a dot is 3px of ink and stops reading as a dot, so "auto"
+// steps up to a coarser unit rather than draw mush. An explicit CONFIG.dotUnit
+// is honoured as long as it fits at all.
+const MIN_DOT_PX = 4;
+function chooseGrid(boxW, boxH, S) {
+  if (CONFIG.dotUnit !== "auto" && UNITS[CONFIG.dotUnit]) {
+    const u = UNITS[CONFIG.dotUnit];
+    const f = fitGridPx(u.total, boxW, boxH, S);
+    if (f) return Object.assign({ unit: u, name: CONFIG.dotUnit }, f);
   }
+  let last = null;
+  for (const name of ["weeks", "months", "years"]) {
+    const u = UNITS[name];
+    const f = fitGridPx(u.total, boxW, boxH, S);
+    if (!f) continue;
+    last = Object.assign({ unit: u, name }, f);
+    if (f.p >= MIN_DOT_PX) return last;
+  }
+  return last;
 }
 function gridImage(boxW, boxH) {
-  const { unit, fit } = chooseGrid(boxW, boxH);
-  const p = fit.p;
-  const gw = Math.max(1, fit.cols * p);
-  const gh = Math.max(1, Math.min(fit.rows, Math.ceil(unit.total / fit.cols)) * p);
+  const S = Device.screenScale();
+  const g = chooseGrid(boxW, boxH, S);
+  if (!g) return null;
+  const gw = (g.cols * g.p) / S, gh = (g.rows * g.p) / S;
   const dc = new DrawContext();
   dc.size = new Size(gw, gh);
   dc.opaque = false;
   dc.respectScreenScale = true;              // -> exact device pixels, no blur
-  const cell = Math.max(1, p * 0.78);
-  const r = Math.max(0.5, cell * 0.3);
-  for (let i = 0; i < unit.total; i++) {
-    const cx = (i % fit.cols) * p;
-    const cy = Math.floor(i / fit.cols) * p;
-    if (i < unit.lived)      rrect(dc, cx, cy, cell, cell, r, C.green);
-    else if (i === unit.lived) rrect(dc, cx, cy, cell, cell, r, C.ember);
-    else                     rrect(dc, cx, cy, cell, cell, r, C.dotEmpty, 0.85);
+  const cellPx = Math.max(2, g.p - 1);
+  const cell = cellPx / S;
+  const r = cellPx <= 4 ? 0 : cell * 0.3;    // squares stay legible when tiny
+  for (let i = 0; i < g.unit.total; i++) {
+    const x = ((i % g.cols) * g.p) / S;
+    const y = (Math.floor(i / g.cols) * g.p) / S;
+    if (i < g.unit.lived)       rrect(dc, x, y, cell, cell, r, C.green);
+    else if (i === g.unit.lived) rrect(dc, x, y, cell, cell, r, C.ember);
+    else                        rrect(dc, x, y, cell, cell, r, C.dotEmpty, 0.85);
   }
-  return { image: dc.getImage(), w: gw, h: gh };
+  return { image: dc.getImage(), w: gw, h: gh, unit: g.name, p: g.p };
 }
 function addGrid(parent, boxW, boxH) {
   const g = gridImage(boxW, boxH);
+  if (!g) return null;
   const wi = parent.addImage(g.image);
   wi.imageSize = new Size(g.w, g.h);
   wi.resizable = false;
-  return wi;
+  return g;
 }
 
 // ---- backgrounds ----
@@ -318,58 +344,53 @@ function backdrop(w) {
 // ============================================================
 function buildMedium(w) {
   const box = widgetBox("medium");
-  const PAD = 14;
+  const PAD = 12;
   const innerW = box.w - PAD * 2;
+  const innerH = box.h - PAD * 2;
   w.setPadding(PAD, PAD, PAD, PAD);
 
-  // The hero column is sized for the widest string it will ever hold ("99.9%").
-  // SF Pro Bold advances: digit ~0.60em, "." ~0.27em, "%" ~0.90em -> 2.97em.
-  // 32pt * 2.97 = ~95pt, so a 100pt column never clips into the bar/grid.
-  const NUMW = 100, GAP = 12, HERO = 32;
-  const railW = innerW - NUMW - GAP;
-  const ROWH = 36;
+  // NOTE: never give a text container a fixed height. A 22pt font has a ~28pt
+  // line box, so a Size(w, 22) stack makes the glyphs spill into the row above.
+  // Width-only sizing (height 0 = auto) is what keeps rows from colliding.
+  const NUM = 22, LINE = Math.ceil(NUM * 1.25);
+  const BARH = 10, GAP = 8, LEAD = 5;
 
-  // ---------- YEAR ----------
-  headerRow(w, innerW, String(now.getFullYear()), nf(daysLeftYear) + " days left");
-  w.addSpacer(5);
-
+  // ---------- YEAR:  61%  2026 ................ 141 days left ----------
   const r1 = w.addStack();
   r1.layoutHorizontally();
   r1.centerAlignContent();
-  const n1 = r1.addStack();
-  n1.layoutHorizontally();
-  n1.centerAlignContent();
-  n1.size = new Size(NUMW, ROWH);
-  txt(n1, Math.round(yearFrac * 100) + "%", Font.boldSystemFont(HERO), C.textHi, { min: 0.5 });
-  n1.addSpacer();
-  r1.addSpacer(GAP);
-  bar(r1, railW, 12, yearFrac);
+  r1.size = new Size(innerW, 0);
+  txt(r1, Math.round(yearFrac * 100) + "%", Font.boldSystemFont(NUM), C.textHi);
+  r1.addSpacer(8);
+  kicker(r1, String(now.getFullYear()));
+  r1.addSpacer();
+  kicker(r1, nf(daysLeftYear) + " days left", true);
+  w.addSpacer(LEAD);
+  bar(w, innerW, BARH, yearFrac);
 
-  w.addSpacer();
+  w.addSpacer(GAP);
   hairline(w, innerW);
-  w.addSpacer();
+  w.addSpacer(GAP);
 
-  // ---------- LIFE ----------
-  headerRow(w, innerW, "Life " + MID + " age " + Math.floor(ageNow),
-                        nf(weeksLeft) + " weeks left");
-  w.addSpacer(5);
-
+  // ---------- LIFE:  22.0%  life . age 18 ..... 3,460 weeks left ----------
   const r2 = w.addStack();
   r2.layoutHorizontally();
   r2.centerAlignContent();
-  const n2 = r2.addStack();
-  n2.layoutHorizontally();
-  n2.centerAlignContent();
-  n2.size = new Size(NUMW, ROWH);
-  txt(n2, d1(lifeFrac * 100) + "%", Font.boldSystemFont(HERO), C.textHi, { min: 0.5 });
-  n2.addSpacer();
-  r2.addSpacer(GAP);
-  const gridBox = r2.addStack();
-  gridBox.layoutHorizontally();
-  gridBox.centerAlignContent();
-  gridBox.size = new Size(railW, ROWH);
-  addGrid(gridBox, railW, ROWH);
-  gridBox.addSpacer();
+  r2.size = new Size(innerW, 0);
+  txt(r2, d1(lifeFrac * 100) + "%", Font.boldSystemFont(NUM), C.textHi);
+  r2.addSpacer(8);
+  kicker(r2, "Life " + MID + " age " + Math.floor(ageNow));
+  r2.addSpacer();
+  kicker(r2, nf(weeksLeft) + " weeks left", true);
+  w.addSpacer(LEAD);
+
+  // Everything left over goes to the grid, at the full width of the widget.
+  const gridH = innerH - (LINE + LEAD + BARH + GAP + 1 + GAP + LINE + LEAD);
+  const gb = w.addStack();
+  gb.layoutHorizontally();
+  gb.size = new Size(innerW, gridH);
+  addGrid(gb, innerW, gridH);
+  gb.addSpacer();
 }
 
 // ============================================================
@@ -377,23 +398,23 @@ function buildMedium(w) {
 // ============================================================
 function buildLarge(w) {
   const box = widgetBox("large");
-  const PAD = 18;
+  const PAD = 16;
   const innerW = box.w - PAD * 2;
   const innerH = box.h - PAD * 2;
   w.setPadding(PAD, PAD, PAD, PAD);
 
-  const GRIDH = Math.round(innerH * 0.19);
-  const HERO = 44;
+  const NUM = 40, LINE = Math.ceil(NUM * 1.25);
+  const BARH = 13, GAP = 11, LEAD = 7, TILES = 42, CAP = 15;
 
   // ---------- YEAR ----------
   headerRow(w, innerW, String(now.getFullYear()) + " " + MID + " week " + weekOfYear + " of 52",
                         nf(daysLeftYear) + " days left", 12);
   w.addSpacer(3);
-  txt(w, Math.round(yearFrac * 100) + "%", Font.boldSystemFont(HERO), C.textHi, { min: 0.5 });
-  w.addSpacer(6);
-  bar(w, innerW, 14, yearFrac);
+  txt(w, Math.round(yearFrac * 100) + "%", Font.boldSystemFont(NUM), C.textHi, { min: 0.5 });
+  w.addSpacer(LEAD);
+  bar(w, innerW, BARH, yearFrac);
 
-  w.addSpacer(8);
+  w.addSpacer(GAP);
   const tiles = w.addStack();
   tiles.layoutHorizontally();
   tiles.size = new Size(innerW, 0);
@@ -403,27 +424,32 @@ function buildLarge(w) {
   tiles.addSpacer();
   miniStat(tiles, "month", d1(monthFrac * 100) + "%", daysLeftMonth + "d left");
 
-  w.addSpacer();
+  w.addSpacer(GAP);
   hairline(w, innerW);
-  w.addSpacer();
+  w.addSpacer(GAP);
 
   // ---------- LIFE ----------
   headerRow(w, innerW, "Life " + MID + " age " + d1(ageNow) + " of " + CONFIG.targetAge,
                         nf(weeksLeft) + " weeks left", 12);
   w.addSpacer(3);
-  txt(w, d1(lifeFrac * 100) + "%", Font.boldSystemFont(HERO), C.textHi, { min: 0.5 });
-  w.addSpacer(8);
+  txt(w, d1(lifeFrac * 100) + "%", Font.boldSystemFont(NUM), C.textHi, { min: 0.5 });
+  w.addSpacer(LEAD);
+
+  const KICK = 14;
+  const gridH = innerH - (KICK + 3 + LINE + LEAD + BARH + GAP + TILES + GAP + 1 + GAP
+                          + KICK + 3 + LINE + LEAD + LEAD + CAP);
   const gb = w.addStack();
   gb.layoutHorizontally();
-  gb.centerAlignContent();
-  gb.size = new Size(innerW, GRIDH);
-  addGrid(gb, innerW, GRIDH);
+  gb.size = new Size(innerW, gridH);
+  addGrid(gb, innerW, gridH);
   gb.addSpacer();
-  w.addSpacer(6);
+
+  w.addSpacer();
   txt(w, APX + " " + nf(summersLeft) + " summers " + MID + " " + APX + " " +
          nf(sundaysLeft) + " Sundays remaining",
       Font.systemFont(12), C.label);
 }
+
 function miniStat(parent, label, val, sub) {
   const s = parent.addStack();
   s.layoutVertically();
@@ -446,12 +472,12 @@ function buildSmall(w, hero, cds) {
   if (hero === "life") {
     headerRow(w, innerW, "Life", "age " + Math.floor(ageNow));
     w.addSpacer();
-    txt(w, d1(lifeFrac * 100) + "%", Font.boldSystemFont(44), C.textHi, { min: 0.5 });
-    w.addSpacer(10);
+    txt(w, d1(lifeFrac * 100) + "%", Font.boldSystemFont(36), C.textHi, { min: 0.5 });
+    w.addSpacer(9);
     const gb = w.addStack();
     gb.layoutHorizontally();
-    gb.size = new Size(innerW, 34);
-    addGrid(gb, innerW, 34);
+    gb.size = new Size(innerW, 42);
+    addGrid(gb, innerW, 42);
     gb.addSpacer();
     w.addSpacer(8);
     txt(w, nf(weeksLeft) + " weeks left", Font.systemFont(11), C.label);
