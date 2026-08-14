@@ -29,6 +29,11 @@ const CONFIG = {
   weekStart: 1,                      // 1 = week starts Monday, 0 = Sunday
   dotUnit: "auto",                   // "auto" | "weeks" | "months" | "years"
                                      //   auto = finest unit that still renders crisply
+  theme: "dark",                     // "dark"  = pink on near-black. Use this if you
+                                     //           turn on the iOS tinted/glass home
+                                     //           screen - see the note below.
+                                     // "blush" = light pink. Prettier on a plain home
+                                     //           screen, but washes out under tint.
 };
 // --------------------------------------------------
 
@@ -36,14 +41,31 @@ const MID  = "\u00B7";  // middle dot
 const APX  = "\u2248";  // almost-equal
 const DASH = "\u2014";  // em dash
 
-// Palette - blush pink, dark plum ink
-const C = {
-  bgTop:    "#FFF7FB",  bgMid:    "#FFE9F4",  bgBot:    "#FFD4E8",
-  panel:    "#FFF1F7",  hairline: "#FFB9D6",  track:    "#FFCBE1",
-  dotEmpty: "#FFAFD1",  accent:   "#FF2E86",  accentDeep: "#FF7EB6",
-  textHi:   "#3D0F28",  textMid:  "#7A2B52",  label:    "#B0678F",
-  ember:    "#8B2FC9",  amber:    "#F59E0B",
+// Palette
+//
+// WHY THERE ARE TWO. The iOS tinted ("glass") home screen does not just recolour
+// a widget - it maps the widget's BRIGHTNESS onto the tint: bright pixels become
+// the tint colour, dark pixels drop away to clear glass. A light-on-light widget
+// therefore collapses into one solid bright block with the text invisible, which
+// is exactly what the blush theme does under tint. The dark theme keeps a dark
+// background and bright content, so tinting reads it correctly.
+const THEMES = {
+  dark: {
+    bgTop:    "#2A121C",  bgMid:    "#170A11",  bgBot:    "#0B0508",
+    panel:    "#1C0D14",  hairline: "#3E2430",  track:    "#3A2029",
+    dotEmpty: "#4E2E3C",  accent:   "#FF4FA3",  accentDeep: "#B81C64",
+    textHi:   "#FFFFFF",  textMid:  "#F2D8E5",  label:    "#C08FAB",
+    ember:    "#FFD166",  amber:    "#FFD60A",
+  },
+  blush: {
+    bgTop:    "#FFF7FB",  bgMid:    "#FFE9F4",  bgBot:    "#FFD4E8",
+    panel:    "#FFF1F7",  hairline: "#FFB9D6",  track:    "#FFCBE1",
+    dotEmpty: "#FFAFD1",  accent:   "#FF2E86",  accentDeep: "#FF7EB6",
+    textHi:   "#3D0F28",  textMid:  "#7A2B52",  label:    "#B0678F",
+    ember:    "#8B2FC9",  amber:    "#F59E0B",
+  },
 };
+const C = THEMES[CONFIG.theme] || THEMES.dark;
 
 // ---------------- date math ----------------
 const DAY  = 86400000;
@@ -56,6 +78,7 @@ death.setFullYear(birth.getFullYear() + CONFIG.targetAge);
 const now = new Date();
 
 const clamp01 = x => Math.max(0, Math.min(1, x));
+const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)).join(",");
 const frac = (a, t, b) => clamp01((t - a) / (b - a));
 const startOfDay = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 const nf = n => Math.round(n).toLocaleString("en-US");
@@ -671,10 +694,10 @@ section{margin-bottom:26px}
   transform:scale(.6);animation:pop .35s ease-out forwards;animation-delay:var(--d,0ms)}
 .dot.lived{background:var(--accent);opacity:1}
 .dot.now{background:var(--ember);opacity:1;animation:pop .35s ease-out forwards,breathe 2.4s ease-in-out 1s infinite;
-  box-shadow:0 0 6px 1px rgba(139,47,201,.45)}
+  box-shadow:0 0 6px 1px rgba(${rgb(C.ember)},.5)}
 @keyframes pop{to{transform:scale(1)}}
-@keyframes breathe{0%,100%{transform:scale(1);box-shadow:0 0 5px 1px rgba(139,47,201,.4)}
-  50%{transform:scale(1.45);box-shadow:0 0 10px 3px rgba(139,47,201,.7)}}
+@keyframes breathe{0%,100%{transform:scale(1);box-shadow:0 0 5px 1px rgba(${rgb(C.ember)},.45)}
+  50%{transform:scale(1.45);box-shadow:0 0 10px 3px rgba(${rgb(C.ember)},.8)}}
 .felt{font-size:12px;color:var(--label);margin-top:16px;line-height:1.7}
 .felt b{color:var(--accent);font-weight:600}
 .reflect{font-style:italic;font-size:15px;color:var(--label);margin-top:10px}
@@ -803,7 +826,7 @@ function tip(el, txt){
   if (tipEl) tipEl.remove();
   tipEl = document.createElement('div');
   tipEl.textContent = txt;
-  tipEl.style.cssText = 'position:fixed;z-index:9;background:var(--ember);color:#FFFFFF;font:11px ui-monospace,monospace;padding:4px 7px;border-radius:6px;transform:translate(-50%,-130%);pointer-events:none';
+  tipEl.style.cssText = 'position:fixed;z-index:9;background:var(--ember);color:' + C.bgBot + ';font:11px ui-monospace,monospace;padding:4px 7px;border-radius:6px;transform:translate(-50%,-130%);pointer-events:none';
   const r = el.getBoundingClientRect();
   tipEl.style.left = r.left + r.width/2 + 'px';
   tipEl.style.top = r.top + 'px';
