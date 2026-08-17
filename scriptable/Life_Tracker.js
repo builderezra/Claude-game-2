@@ -33,7 +33,7 @@ const CONFIG = {
   // stays pure ASCII and cannot be mangled by copy/paste.
   markers: true,
   events: [                          // the big ones, drawn as emoji
-    { m: 1,  d: 1,  emoji: "\uD83C\uDF86", label: "New Year" },
+    { m: 1,  d: 1,  emoji: "\uD83C\uDF89", label: "New Year" },
     { m: 2,  d: 14, emoji: "\uD83D\uDC98", label: "Valentine's Day" },
     { easter: true, emoji: "\uD83D\uDC23", label: "Easter" },
     { m: 4,  d: 25, emoji: "\uD83C\uDF6A", label: "Anzac Day" },
@@ -451,7 +451,12 @@ function tickImage(w, h, majors, minors) {
     placed.push(x);
   }
   for (const x of placed) {
-    rrect(dc, Math.max(0, Math.min(w - TW, x - TW / 2)), 0, TW, h, TW / 2, C.label, 0.9);
+    rrect(dc, Math.max(0, Math.min(w - TW, x - TW / 2)), h * 0.35, TW, h * 0.65,
+          TW / 2, C.label, 0.9);
+  }
+  for (const M of majors) {
+    rrect(dc, Math.max(0, Math.min(w - TW, M.f * w - TW / 2)), 0, TW, h,
+          TW / 2, C.textHi, 0.95);
   }
   return dc.getImage();
 }
