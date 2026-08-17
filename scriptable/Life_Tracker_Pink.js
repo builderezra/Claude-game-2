@@ -519,15 +519,20 @@ function emojiRow(parent, w, majors, size, h) {
   const row = parent.addStack();
   row.layoutHorizontally();
   row.size = new Size(w, h);
-  const EW = Math.ceil(size * 1.6);
+  // The cell is deliberately wider than the glyph and the glyph is CENTRED in it
+  // (spacers both sides). Text in a stack is left-aligned by default, so a wide
+  // cell was hanging the glyph off its left edge - which is what pushed the first
+  // marker past the start of the bar and cropped it. INSET keeps the first and
+  // last markers clear of the widget edge.
+  const EW = Math.ceil(size * 1.8), INSET = 3;
   // Two-pass de-overlap. A forward pass alone pushes each emoji right and the
   // last one falls off the end - which silently dropped Christmas. The backward
   // pass pulls the tail back inside, so every marker survives.
-  const xs = majors.map(m => Math.max(0, Math.min(w - EW, m.f * w - EW / 2)));
+  const xs = majors.map(m => Math.max(INSET, Math.min(w - EW - INSET, m.f * w - EW / 2)));
   for (let i = 1; i < xs.length; i++) xs[i] = Math.max(xs[i], xs[i - 1] + EW);
   for (let i = xs.length - 1; i >= 0; i--) {
-    if (xs[i] > w - EW) xs[i] = w - EW;
-    if (i > 0 && xs[i - 1] > xs[i] - EW) xs[i - 1] = Math.max(0, xs[i] - EW);
+    if (xs[i] > w - EW - INSET) xs[i] = w - EW - INSET;
+    if (i > 0 && xs[i - 1] > xs[i] - EW) xs[i - 1] = Math.max(INSET, xs[i] - EW);
   }
   let cursor = 0;
   for (let i = 0; i < majors.length; i++) {
@@ -539,6 +544,7 @@ function emojiRow(parent, w, majors, size, h) {
     cell.layoutHorizontally();
     cell.centerAlignContent();
     cell.size = new Size(EW, h);
+    cell.addSpacer();
     if (m.img) {
       const wi = cell.addImage(artImage(m.img));
       wi.imageSize = new Size(size, size);
@@ -548,6 +554,7 @@ function emojiRow(parent, w, majors, size, h) {
       t.font = Font.systemFont(size);
       t.lineLimit = 1;
     }
+    cell.addSpacer();
     cursor = start + EW;
   }
   row.addSpacer();
