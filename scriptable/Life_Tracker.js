@@ -465,12 +465,11 @@ function emojiRow(parent, w, majors, size, h) {
   const row = parent.addStack();
   row.layoutHorizontally();
   row.size = new Size(w, h);
-  // The cell is deliberately wider than the glyph and the glyph is CENTRED in it
-  // (spacers both sides). Text in a stack is left-aligned by default, so a wide
-  // cell was hanging the glyph off its left edge - which is what pushed the first
-  // marker past the start of the bar and cropped it. INSET keeps the first and
-  // last markers clear of the widget edge.
-  const EW = Math.ceil(size * 1.8), INSET = 3;
+  // Cell width tracks the glyph, because text in a stack is left-aligned and a
+  // cell wider than the glyph just shifts it. Do NOT try to centre it with
+  // spacers: inside a fixed-width stack they expand and crush the glyph to
+  // nothing. INSET is what keeps the first and last markers off the edge.
+  const EW = Math.round(size * 1.35), INSET = 6;
   // Two-pass de-overlap. A forward pass alone pushes each emoji right and the
   // last one falls off the end - which silently dropped Christmas. The backward
   // pass pulls the tail back inside, so every marker survives.
@@ -490,7 +489,6 @@ function emojiRow(parent, w, majors, size, h) {
     cell.layoutHorizontally();
     cell.centerAlignContent();
     cell.size = new Size(EW, h);
-    cell.addSpacer();
     if (m.img) {
       const wi = cell.addImage(artImage(m.img));
       wi.imageSize = new Size(size, size);
@@ -500,7 +498,6 @@ function emojiRow(parent, w, majors, size, h) {
       t.font = Font.systemFont(size);
       t.lineLimit = 1;
     }
-    cell.addSpacer();
     cursor = start + EW;
   }
   row.addSpacer();
