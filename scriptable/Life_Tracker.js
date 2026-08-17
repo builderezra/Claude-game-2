@@ -457,12 +457,7 @@ function tickImage(w, h, majors, minors) {
     placed.push(x);
   }
   for (const x of placed) {
-    rrect(dc, Math.max(0, Math.min(w - TW, x - TW / 2)), h * 0.35, TW, h * 0.65,
-          TW / 2, C.label, 0.9);
-  }
-  for (const M of majors) {
-    rrect(dc, Math.max(0, Math.min(w - TW, M.f * w - TW / 2)), 0, TW, h,
-          TW / 2, C.textHi, 0.95);
+    rrect(dc, Math.max(0, Math.min(w - TW, x - TW / 2)), 0, TW, h, TW / 2, C.label, 0.9);
   }
   return dc.getImage();
 }
@@ -470,7 +465,7 @@ function emojiRow(parent, w, majors, size, h) {
   const row = parent.addStack();
   row.layoutHorizontally();
   row.size = new Size(w, h);
-  const EW = Math.round(size * 1.35);
+  const EW = Math.ceil(size * 1.6);
   // Two-pass de-overlap. A forward pass alone pushes each emoji right and the
   // last one falls off the end - which silently dropped Christmas. The backward
   // pass pulls the tail back inside, so every marker survives.
