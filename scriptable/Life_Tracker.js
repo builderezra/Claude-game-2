@@ -28,6 +28,18 @@ const CONFIG = {
   weekStart: 1,                      // 1 = week starts Monday, 0 = Sunday
   dotUnit: "auto",                   // "auto" | "weeks" | "months" | "years"
                                      //   auto = finest unit that still renders crisply
+
+  // Markers along the year bar. Emoji are written as \u escapes so the file
+  // stays pure ASCII and cannot be mangled by copy/paste.
+  markers: true,
+  events: [                          // the big ones, drawn as emoji
+    { easter: true, emoji: "\uD83D\uDC23", label: "Easter" },
+    { m: 7,  d: 13, emoji: "\u2764\uFE0F", label: "Anniversary" },
+    { m: 10, d: 31, emoji: "\uD83C\uDF83", label: "Halloween" },
+    { m: 12, d: 5,  emoji: "\uD83C\uDF82", label: "Birthday" },
+    { m: 12, d: 25, emoji: "\uD83C\uDF84", label: "Christmas" },
+  ],
+  holidays: true,                    // WA public holidays, as small ticks
 };
 // --------------------------------------------------
 
@@ -99,6 +111,79 @@ const weeksLived   = Math.max(0, Math.floor((now - birth) / WEEK));
 const weeksLeft    = Math.max(0, totalWeeks - weeksLived);
 const sundaysLeft  = Math.max(0, Math.floor((death - now) / WEEK));
 const summersLeft  = Math.max(0, Math.floor(yearsLeft));
+
+// ---------------- year markers ----------------
+const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const sameDay = (a, b) => a.getFullYear() === b.getFullYear()
+  && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+
+// Anonymous Gregorian computus - Easter moves, so it has to be calculated
+// rather than listed, or the widget goes wrong next year.
+function easterSunday(y) {
+  const a = y % 19, b = Math.floor(y / 100), c = y % 100;
+  const d = Math.floor(b / 4), e = b % 4;
+  const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const mo = Math.floor((h + l - 7 * m + 114) / 31);
+  return new Date(y, mo - 1, ((h + l - 7 * m + 114) % 31) + 1);
+}
+// n = 1 for the first such weekday of the month, -1 for the last
+function nthWeekday(y, month, weekday, n) {
+  if (n > 0) {
+    const first = new Date(y, month - 1, 1);
+    return new Date(y, month - 1, 1 + ((weekday - first.getDay() + 7) % 7) + (n - 1) * 7);
+  }
+  const last = new Date(y, month, 0);
+  return new Date(y, month - 1, last.getDate() - ((last.getDay() - weekday + 7) % 7));
+}
+// Western Australia. Weekend holidays get a substitute weekday, which is why
+// Christmas can spill into a third and fourth day some years.
+function holidaysFor(y) {
+  const easter = easterSunday(y);
+  // sub = does a weekend date earn a substitute weekday. The Easter three are
+  // already defined relative to a Sunday, so they never generate one.
+  const list = [
+    { d: new Date(y, 0, 1),        sub: true  },  // New Year's Day
+    { d: new Date(y, 0, 26),       sub: true  },  // Australia Day
+    { d: nthWeekday(y, 3, 1, 1),   sub: false },  // Labour Day - 1st Mon in March
+    { d: addDays(easter, -2),      sub: false },  // Good Friday
+    { d: easter,                   sub: false },  // Easter Sunday
+    { d: addDays(easter, 1),       sub: false },  // Easter Monday
+    { d: new Date(y, 3, 25),       sub: true  },  // Anzac Day
+    { d: nthWeekday(y, 6, 1, 1),   sub: false },  // WA Day - 1st Mon in June
+    { d: nthWeekday(y, 9, 1, -1),  sub: false },  // King's Birthday - last Mon Sept
+    { d: new Date(y, 11, 25),      sub: true  },  // Christmas Day
+    { d: new Date(y, 11, 26),      sub: true  },  // Boxing Day
+  ];
+  const out = list.map(x => x.d);
+  for (const x of list) {
+    const wd = x.d.getDay();
+    if (!x.sub || (wd !== 0 && wd !== 6)) continue;
+    let s = addDays(x.d, wd === 6 ? 2 : 1);
+    while (out.some(o => sameDay(o, s))) s = addDays(s, 1);
+    out.push(s);
+  }
+  return out;
+}
+function yearFracOf(d) {
+  const a = new Date(d.getFullYear(), 0, 1), b = new Date(d.getFullYear() + 1, 0, 1);
+  return clamp01((startOfDay(d) - a) / (b - a));
+}
+function yearMarkers() {
+  const y = now.getFullYear();
+  const majors = (CONFIG.events || []).map(ev => ({
+    emoji: ev.emoji,
+    label: ev.label,
+    f: yearFracOf(ev.easter ? easterSunday(y) : new Date(y, ev.m - 1, ev.d)),
+  })).sort((a, b) => a.f - b.f);
+  const minors = CONFIG.holidays
+    ? holidaysFor(y).map(d => ({ f: yearFracOf(d) })).sort((a, b) => a.f - b.f)
+    : [];
+  return { majors, minors };
+}
 
 // grid units: total cells + how many are already spent
 const UNITS = {
@@ -339,12 +424,74 @@ function backdrop(w) {
   w.backgroundGradient = g;
 }
 
+// ---- year-bar markers ----
+// Minor ticks are drawn (exact positions), the big ones are native emoji text
+// (so they render in colour and stay crisp). An emoji sits in a fixed-width
+// cell, which keeps positioning deterministic instead of accumulating error.
+function tickImage(w, h, majors, minors) {
+  const dc = new DrawContext();
+  dc.size = new Size(w, h);
+  dc.opaque = false;
+  dc.respectScreenScale = true;
+  const TW = 1.5, MINGAP = 3, HIDE = 7;
+  const placed = [];
+  for (const m of minors) {
+    const x = m.f * w;
+    if (majors.some(M => Math.abs(M.f * w - x) < HIDE)) continue;   // sits under an emoji
+    if (placed.some(px => Math.abs(px - x) < MINGAP)) continue;     // too close to call apart
+    placed.push(x);
+  }
+  for (const x of placed) {
+    rrect(dc, Math.max(0, Math.min(w - TW, x - TW / 2)), 0, TW, h, TW / 2, C.label, 0.9);
+  }
+  return dc.getImage();
+}
+function emojiRow(parent, w, majors, size, h) {
+  const row = parent.addStack();
+  row.layoutHorizontally();
+  row.size = new Size(w, h);
+  const EW = Math.round(size * 1.35);
+  // Two-pass de-overlap. A forward pass alone pushes each emoji right and the
+  // last one falls off the end - which silently dropped Christmas. The backward
+  // pass pulls the tail back inside, so every marker survives.
+  const xs = majors.map(m => Math.max(0, Math.min(w - EW, m.f * w - EW / 2)));
+  for (let i = 1; i < xs.length; i++) xs[i] = Math.max(xs[i], xs[i - 1] + EW);
+  for (let i = xs.length - 1; i >= 0; i--) {
+    if (xs[i] > w - EW) xs[i] = w - EW;
+    if (i > 0 && xs[i - 1] > xs[i] - EW) xs[i - 1] = Math.max(0, xs[i] - EW);
+  }
+  let cursor = 0;
+  for (let i = 0; i < majors.length; i++) {
+    const m = majors[i];
+    const start = xs[i];
+    if (start + EW > w + 0.5) continue;      // genuinely no room (too many markers)
+    if (start > cursor) row.addSpacer(start - cursor);
+    const cell = row.addStack();
+    cell.layoutHorizontally();
+    cell.centerAlignContent();
+    cell.size = new Size(EW, h);
+    const t = cell.addText(m.emoji);
+    t.font = Font.systemFont(size);
+    t.lineLimit = 1;
+    cursor = start + EW;
+  }
+  row.addSpacer();
+}
+function markerStrip(parent, w, tickH, size, emojiH) {
+  const M = yearMarkers();
+  const img = tickImage(w, tickH, M.majors, M.minors);
+  const wi = parent.addImage(img);
+  wi.imageSize = new Size(w, tickH);
+  wi.resizable = false;
+  emojiRow(parent, w, M.majors, size, emojiH);
+}
+
 // ============================================================
 //  MEDIUM  -  stacked: year on top, life underneath, full width each
 // ============================================================
 function buildMedium(w) {
   const box = widgetBox("medium");
-  const PAD = 12;
+  const PAD = 10;
   const innerW = box.w - PAD * 2;
   const innerH = box.h - PAD * 2;
   w.setPadding(PAD, PAD, PAD, PAD);
@@ -353,7 +500,9 @@ function buildMedium(w) {
   // line box, so a Size(w, 22) stack makes the glyphs spill into the row above.
   // Width-only sizing (height 0 = auto) is what keeps rows from colliding.
   const NUM = 22, LINE = Math.ceil(NUM * 1.25);
-  const BARH = 10, GAP = 8, LEAD = 5;
+  const BARH = 10, GAP = 7, LEAD = 4;
+  const TICKH = 4, EMOJI = 11, EMOJIH = 14;
+  const STRIP = CONFIG.markers ? TICKH + EMOJIH : 0;
 
   // ---------- YEAR:  61%  2026 ................ 141 days left ----------
   const r1 = w.addStack();
@@ -367,6 +516,7 @@ function buildMedium(w) {
   kicker(r1, nf(daysLeftYear) + " days left", true);
   w.addSpacer(LEAD);
   bar(w, innerW, BARH, yearFrac);
+  if (CONFIG.markers) markerStrip(w, innerW, TICKH, EMOJI, EMOJIH);
 
   w.addSpacer(GAP);
   hairline(w, innerW);
@@ -385,7 +535,7 @@ function buildMedium(w) {
   w.addSpacer(LEAD);
 
   // Everything left over goes to the grid, at the full width of the widget.
-  const gridH = innerH - (LINE + LEAD + BARH + GAP + 1 + GAP + LINE + LEAD);
+  const gridH = innerH - (LINE + LEAD + BARH + STRIP + GAP + 1 + GAP + LINE + LEAD);
   const gb = w.addStack();
   gb.layoutHorizontally();
   gb.size = new Size(innerW, gridH);
@@ -404,7 +554,9 @@ function buildLarge(w) {
   w.setPadding(PAD, PAD, PAD, PAD);
 
   const NUM = 40, LINE = Math.ceil(NUM * 1.25);
-  const BARH = 13, GAP = 11, LEAD = 7, TILES = 42, CAP = 15;
+  const BARH = 13, GAP = 10, LEAD = 6, TILES = 42, CAP = 14;
+  const TICKH = 5, EMOJI = 13, EMOJIH = 16;
+  const STRIP = CONFIG.markers ? TICKH + EMOJIH : 0;
 
   // ---------- YEAR ----------
   headerRow(w, innerW, String(now.getFullYear()) + " " + MID + " week " + weekOfYear + " of 52",
@@ -413,6 +565,7 @@ function buildLarge(w) {
   txt(w, Math.round(yearFrac * 100) + "%", Font.boldSystemFont(NUM), C.textHi, { min: 0.5 });
   w.addSpacer(LEAD);
   bar(w, innerW, BARH, yearFrac);
+  if (CONFIG.markers) markerStrip(w, innerW, TICKH, EMOJI, EMOJIH);
 
   w.addSpacer(GAP);
   const tiles = w.addStack();
@@ -436,7 +589,7 @@ function buildLarge(w) {
   w.addSpacer(LEAD);
 
   const KICK = 14;
-  const gridH = innerH - (KICK + 3 + LINE + LEAD + BARH + GAP + TILES + GAP + 1 + GAP
+  const gridH = innerH - (KICK + 3 + LINE + LEAD + BARH + STRIP + GAP + TILES + GAP + 1 + GAP
                           + KICK + 3 + LINE + LEAD + LEAD + CAP);
   const gb = w.addStack();
   gb.layoutHorizontally();
